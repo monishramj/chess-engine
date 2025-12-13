@@ -4,6 +4,8 @@ import numpy as np
 
 class Piece(Enum):
     EMPTY = 0
+    AM = 7 # available move
+
 
     # white
     WP = 1 # pawn
@@ -26,31 +28,43 @@ class Board:
     def __init__(self) :
         self.board = np.zeros((64), dtype=int)
     
-    def place_piece(self, tile='a1', val=0):
-        if isinstance(tile, str):
-            file = tile[0].lower()
-            rank = int(tile[1])
-            c = ord(file) - ord('a')
-            r = 8 - rank
-        else:
-            r, c = tile
-
+    # def decode_tile(self, tile='a1') :
+    #     if isinstance(tile, str):
+    #         file = tile[0].lower()
+    #         rank = int(tile[1])
+    #         c = ord(file) - ord('a')
+    #         r = 8 - rank
+    #     else:
+    #         r, c = tile
+        
+    #     return r, c
+    
+    def set_piece(self, tile=(0,0), val=Piece.EMPTY.value):
+        r, c = tile
         self.board[r * 8 + c] = val
+    
+    def get_piece(self, tile=(0,0)) :
+        r, c = tile
+        return self.board[r * 8 + c]
 
-    def is_white(self, val):
+
+    def is_white(val):
         return val > 0
 
-    def is_black(self, val):
+    def is_black(val):
         return val < 0
+
 
     def __str__(self) :
         def piece_to_str(val):
             if val == 0:
                 return "   "
+            if val == 7:
+                return " ⊙ "
             return f" {Piece(val).name}"
     
         lines = []
-        files = "    a   b   c   d   e   f   g   h"
+        files = "    0   1   2   3   4   5   6   7"
         horizontal = "  +---+---+---+---+---+---+---+---+"
 
         lines.append(files)
@@ -61,7 +75,7 @@ class Board:
             for c in range(8):
                 val = self.board[r * 8 + c]
                 row.append(piece_to_str(val))
-            rank = 8 - r
+            rank = r
             lines.append(f"{rank} |" + "|".join(row) + "|")
             lines.append(horizontal)
 
@@ -70,7 +84,7 @@ class Board:
 
 
 # test code
-b = Board()
-b.place_piece((0, 4), Piece.BK.value)
-b.place_piece('c2', Piece.WP.value)
-print(b)
+# b = Board()
+# b.set_piece((0, 4), Piece.BK.value)
+# b.set_piece((6,2), Piece.WP.value)
+# print(b)
