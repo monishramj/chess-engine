@@ -24,25 +24,53 @@ class Piece(Enum):
 
 class Board:
     def __init__(self) :
-        self.board = np.zeros((8,8), dtype=int)
+        self.board = np.zeros((64), dtype=int)
+    
+    def place_piece(self, tile='a1', val=0):
+        if isinstance(tile, str):
+            file = tile[0].lower()
+            rank = int(tile[1])
+            c = ord(file) - ord('a')
+            r = 8 - rank
+        else:
+            r, c = tile
+
+        self.board[r * 8 + c] = val
+
+    def is_white(self, val):
+        return val > 0
+
+    def is_black(self, val):
+        return val < 0
 
     def __str__(self) :
-        def piece_to_str(val) :
-            for piece in Piece:
-                if piece.value == val:
-                    if piece.value == 0:
-                        return '.'
-                    return piece.name
-            return '.'
+        def piece_to_str(val):
+            if val == 0:
+                return "   "
+            return f" {Piece(val).name}"
     
-        rows = []
-        for row in self.board:
-            row_str = ' '.join(f'{piece_to_str(val):>3}' for val in row)
-            rows.append(row_str)
-        return '---------------------------------\n|' + '|\n|                               |\n|'.join(rows) + '|\n---------------------------------'
+        lines = []
+        files = "    a   b   c   d   e   f   g   h"
+        horizontal = "  +---+---+---+---+---+---+---+---+"
+
+        lines.append(files)
+        lines.append(horizontal)
+
+        for r in range(8):
+            row = []
+            for c in range(8):
+                val = self.board[r * 8 + c]
+                row.append(piece_to_str(val))
+            rank = 8 - r
+            lines.append(f"{rank} |" + "|".join(row) + "|")
+            lines.append(horizontal)
+
+        return "\n".join(lines)
 
 
+
+# test code
 b = Board()
-b.board[6][0] = Piece.WP.value
-b.board[0][4] = Piece.BK.value
+b.place_piece((0, 4), Piece.BK.value)
+b.place_piece('c2', Piece.WP.value)
 print(b)
