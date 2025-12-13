@@ -21,7 +21,7 @@ def available_moves(board, tile=(0,0)) :
         case Piece.WP.value:
             if Board.is_white(piece):
                 moves.append((r-1, c))
-                if r == 6:
+                if r == 6 and valid_move(board, tile=(r-1, c), isWhite=True):
                     moves.append((r-2, c))
                 for dc in [-1, 1]:
                     move = (r-1, c+dc)
@@ -29,7 +29,7 @@ def available_moves(board, tile=(0,0)) :
                         moves.append(move)
             else: 
                 moves.append((r+1, c))
-                if r == 1:
+                if r == 1 and valid_move(board, tile=(r+1, c), isWhite=False):
                     moves.append((r+2, c))
                 for dc in [-1, 1]:
                     move = (r+1, c+dc)
@@ -106,12 +106,12 @@ def valid_move(board, tile, isWhite=None):
 # test code
 b = Board()
 pos = (5,4)
-b.set_piece(pos, Piece.WB.value)
+b.set_piece(pos, Piece.WP.value)
 b.set_piece((1,6), Piece.BP.value)
-b.set_piece((4,5), Piece.BP.value)
+b.set_piece((2,5), Piece.WP.value)
 print(b)
 
-moves = available_moves(b, tile=(6,5))
+moves = available_moves(b, tile=(1,6))
 for move in moves:
     b.set_piece(tile=move, val=Piece.AM.value)
 
