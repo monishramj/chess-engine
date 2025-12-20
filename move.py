@@ -67,7 +67,7 @@ def available_moves(board, tile=(0,0)) :
 
         case Piece.WR.value :
             offsets = [(-1, 0), ( 0, -1),
-                              ( 0, 1), ( 1, 0)]
+                        ( 0, 1), ( 1, 0)]
         
     for dr, dc in offsets:
         if extend:
@@ -87,8 +87,7 @@ def available_moves(board, tile=(0,0)) :
     # js double checking
     valid_moves = [move for move in moves if valid_move(board, move, isWhite=Board.is_white(piece))]
     return valid_moves
-
-                
+             
 def valid_move(board, tile, isWhite=None):
     r, c = tile
     if not (0 <= r <= 7 and 0 <= c <= 7):
@@ -100,19 +99,52 @@ def valid_move(board, tile, isWhite=None):
         return (Board.is_white(target) != isWhite) # bugged
     return False
 
+def all_moves(board, color=1) : # 1 = white, -1 = black
+    output = []
+    for r in range(8) :
+        for c in range(8) :
+            # print('checking ', r, ',', c)
+            tile = (r,c)
+            if board.get_piece(tile) * color > 0 :
+                moves = available_moves(board, tile)
+                for move in moves :
+                    output.append((tile, move))
+            else :
+                continue
+                
+    print(output)
+    return output
 
+def evaluate(board) :
+    score = 0
+    for r in range(8) :
+        for c in range(8) :
+            tile = (r,c)
+            match (board.get_piece(tile)):
+                case Piece.WP.value:
+                    score += 1
+                case Piece.WN.value:
+                    score += 3
+                case Piece.WB.value:
+                    score += 3
+                case Piece.WR.value:
+                    score += 5
+                case Piece.WQ.value:
+                    score += 9
+                case Piece.WK.value:
+                    score += 100
+                case Piece.BP.value:
+                    score -= 1
+                case Piece.BN.value:
+                    score -= 3
+                case Piece.BB.value:
+                    score -= 3
+                case Piece.BR.value:
+                    score -= 5
+                case Piece.BQ.value:
+                    score -= 9
+                case Piece.BK.value:
+                    score -= 100
+    return score
+                
 
-
-# test code
-b = Board()
-pos = (5,4)
-b.set_piece(pos, Piece.WP.value)
-b.set_piece((1,6), Piece.BP.value)
-b.set_piece((2,5), Piece.WP.value)
-print(b)
-
-moves = available_moves(b, tile=(1,6))
-for move in moves:
-    b.set_piece(tile=move, val=Piece.AM.value)
-
-print(b)
