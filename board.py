@@ -29,6 +29,7 @@ class Board:
         self.board = np.zeros((64), dtype=int)
         self.color = 1 # white
 
+    # https://www.365chess.com/board_editor.php
     def fen_to_board(self, fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') :
         try:
             fields = fen.split()

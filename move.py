@@ -20,25 +20,28 @@ def available_moves(board, tile=(0,0)) :
     extend = True
     match abs(piece):
         case Piece.WP.value:
+            # will have to fix this eventually 
             if Board.is_white(piece):
-                moves.append((r-1, c))
-                if r == 6 and valid_move(board, tile=(r-1, c), isWhite=True):
+                if valid_move(board, tile=(r-1, c), isWhite=True) and board.get_piece((r-1, c)) == Piece.EMPTY.value:
+                    moves.append((r-1, c))
+                if r == 6 and valid_move(board, tile=(r-2, c), isWhite=True) and board.get_piece((r-2, c)) == Piece.EMPTY.value:
                     moves.append((r-2, c))
+                    
                 for dc in [-1, 1]:
                     move = (r-1, c+dc)
                     if 0 <= move[1] <= 7 and Board.is_black(board.get_piece(move)):
                         moves.append(move)
             else: 
-                moves.append((r+1, c))
-                if r == 1 and valid_move(board, tile=(r+1, c), isWhite=False):
+                if valid_move(board, tile=(r+1, c), isWhite=True) and board.get_piece((r+1, c)) == Piece.EMPTY.value:
+                    moves.append((r+1, c))
+                if r == 1 and valid_move(board, tile=(r+2, c), isWhite=True) and board.get_piece((r+2, c)) == Piece.EMPTY.value:
                     moves.append((r+2, c))
+
                 for dc in [-1, 1]:
                     move = (r+1, c+dc)
                     if 0 <= move[1] <= 7 and Board.is_white(board.get_piece(move)):
                         moves.append(move)
 
-
-        
         case Piece.WK.value :
             offsets = [(-1, -1), (-1, 0), (-1, 1),
                        ( 0, -1),          ( 0, 1),
@@ -149,7 +152,6 @@ def evaluate(board) :
     return score
                 
 def minimax(board, depth, color) :
-
     if depth == 0:
         return evaluate(board), None
     
