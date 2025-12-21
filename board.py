@@ -80,11 +80,4 @@ class Board:
             lines.append(horizontal)
 
         return "\n".join(lines)
-
-
-
-# test code
-# b = Board()
-# b.set_piece((0, 4), Piece.BK.value)
-# b.set_piece((6,2), Piece.WP.value)
-# print(b)
+    

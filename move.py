@@ -1,4 +1,5 @@
 from board import Piece, Board
+import numpy as np
 
 def move_piece(board, start=(0, 0), end=(0, 0)) :
     new_board = Board()
@@ -112,7 +113,7 @@ def all_moves(board, color=1) : # 1 = white, -1 = black
             else :
                 continue
                 
-    print(output)
+    # print(output)
     return output
 
 def evaluate(board) :
@@ -147,4 +148,27 @@ def evaluate(board) :
                     score -= 100
     return score
                 
+def minimax(board, depth, color) :
 
+    if depth == 0:
+        return evaluate(board), None
+    
+    moves = all_moves(board, color)
+    best_move = None
+    best = -np.inf if color == 1 else np.inf
+
+    for start, end in moves:
+        new_board = move_piece(board, start, end)
+        score, unused = minimax(new_board, depth - 1, -color)
+
+        if color == 1: 
+            if score > best:
+                best = score
+                best_move = (start, end)
+        else: 
+            if score < best:
+                best = score
+                best_move = (start, end)
+                
+    return best, best_move
+        
