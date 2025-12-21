@@ -25,20 +25,71 @@ class Piece(Enum):
 
 
 class Board:
-    def __init__(self) :
+    def __init__(self, color=1) :
         self.board = np.zeros((64), dtype=int)
-    
-    # def decode_tile(self, tile='a1') :
-    #     if isinstance(tile, str):
-    #         file = tile[0].lower()
-    #         rank = int(tile[1])
-    #         c = ord(file) - ord('a')
-    #         r = 8 - rank
-    #     else:
-    #         r, c = tile
-        
-    #     return r, c
-    
+        self.color = 1 # white
+
+    def fen_to_board(self, fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') :
+        try:
+            fields = fen.split()
+            rows = fields[0].split('/')
+            i = 0
+            for row in rows:
+                for c in row:
+                    if c.isdigit():
+                        i += int(c)
+                    else:
+                        piece = Board.ascii_to_piece(c)
+                        self.set_piece(tile=(i//8, i%8), val=piece)
+                        i += 1
+            
+            if fields[1] == 'w': #2nd place thing shows turn
+                self.color = 1
+            else:
+                self.color = -1 
+        except :
+            print("Invalid FEN, error in fen_to_board")
+
+    @staticmethod
+    def ascii_to_piece(c) :
+        match ord(c):
+            # black
+            case 114: # rook
+                return Piece.BR.value
+            case 110: # knight
+                return Piece.BN.value
+            case 98: # bishop
+                return Piece.BB.value
+            case 113: # queen
+                return Piece.BQ.value
+            case 107: # king
+                return Piece.BK.value
+            case 112: # pawn
+                return Piece.BP.value
+
+            # white
+            case 82:
+                return Piece.WR.value
+            case 78:
+                return Piece.WN.value
+            case 66:
+                return Piece.WB.value
+            case 81:
+                return Piece.WQ.value
+            case 75:
+                return Piece.WK.value
+            case 80:
+                return Piece.WP.value  
+        return 0
+
+    @staticmethod
+    def is_white(val):
+        return val > 0
+
+    @staticmethod
+    def is_black(val):
+        return val < 0
+
     def set_piece(self, tile=(0,0), val=Piece.EMPTY.value):
         r, c = tile
         self.board[r * 8 + c] = val
@@ -46,13 +97,6 @@ class Board:
     def get_piece(self, tile=(0,0)) :
         r, c = tile
         return self.board[r * 8 + c]
-
-
-    def is_white(val):
-        return val > 0
-
-    def is_black(val):
-        return val < 0
 
 
     def __str__(self) :
@@ -80,4 +124,4 @@ class Board:
             lines.append(horizontal)
 
         return "\n".join(lines)
-    
+
