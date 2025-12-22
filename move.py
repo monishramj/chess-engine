@@ -22,19 +22,21 @@ def available_moves(board, tile=(0,0)) :
         case Piece.WP.value:           
             if Board.is_white(piece):
                 dr = -1
+                start_row = 6
             else: 
                 dr = 1
+                start_row = 1
             step = (r+dr, c)
             dstep = (r+(dr*2), c)
 
-            if valid_move(board, tile=step, isWhite=True) and board.get_piece(step) == Piece.EMPTY.value:
-                    moves.append(step)
-            if r == 1 and valid_move(board, tile=dstep, isWhite=True) and board.get_piece(dstep) == Piece.EMPTY.value and board.get_piece(step) == Piece.EMPTY.value:
-                moves.append(dstep)
+            if valid_move(board, tile=step, isWhite=True) and is_empty(board, step):
+                moves.append(step)
+                if r == start_row and valid_move(board, tile=dstep, isWhite=True) and is_empty(board, dstep):
+                    moves.append(dstep)
 
             for dc in [-1, 1]:
                     move = (r+dr, c+dc)
-                    if 0 <= move[1] <= 7 and Board.is_white(board.get_piece(move)):
+                    if 0 <= move[1] <= 7 and is_enemy(board, tile, Board.is_white(board.get_piece(move))):
                         moves.append(move)
 
 
@@ -89,15 +91,25 @@ def available_moves(board, tile=(0,0)) :
     return valid_moves
              
 def valid_move(board, tile, isWhite=None):
-    r, c = tile
-    if not (0 <= r <= 7 and 0 <= c <= 7):
+    if not in_bounds(tile):
         return False
-    target = board.get_piece(tile)
-    if target == Piece.EMPTY.value:
+    if is_empty(board, tile):
         return True
     if isWhite is not None:
+        target = board.get_piece(tile)
         return (Board.is_white(target) != isWhite) # bugged
     return False
+
+def in_bounds(tile):
+    r, c = tile
+    return 0 <= r <= 7 and 0 <= c <= 7
+
+def is_empty(board, tile):
+    return board.get_piece(tile) == Piece.EMPTY.value
+
+def is_enemy(board, tile, isWhite):
+    piece = board.get_piece(tile)
+    return Board.is_white(piece) != isWhite
 
 def all_moves(board, color=1) : # 1 = white, -1 = black
     output = []
