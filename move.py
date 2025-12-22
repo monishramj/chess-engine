@@ -106,6 +106,8 @@ def is_empty(board, tile):
     return board.get_piece(tile) == Piece.EMPTY.value
 
 def is_enemy(board, tile, isWhite):
+    if is_empty(board, tile):
+        return False
     piece = board.get_piece(tile)
     return Board.is_white(piece) != isWhite
 
@@ -167,7 +169,7 @@ def evaluate(board):
         Piece.WQ.value: 9,   Piece.BQ.value: -9,
         Piece.WK.value: 100, Piece.BK.value: -100,
     }
-    
+        
     score = 0
     for r in range(8):
         for c in range(8):
