@@ -13,30 +13,28 @@ def move_piece(board, start=(0, 0), end=(0, 0)) :
 
 def available_moves(board, tile=(0,0)) :
     piece = board.get_piece(tile)
+    is_white = Board.is_white(piece)
     r, c = tile
     moves = []
 
     offsets = []
     extend = True
     match abs(piece):
-        case Piece.WP.value:           
-            if Board.is_white(piece):
-                dr = -1
-                start_row = 6
-            else: 
-                dr = 1
-                start_row = 1
+        case Piece.WP.value:   
+            dr = -1 if is_white else 1
+            start_row = 6 if is_white else 1
+
             step = (r+dr, c)
             dstep = (r+(dr*2), c)
 
-            if valid_move(board, tile=step, isWhite=True) and is_empty(board, step):
+            if in_bounds(step) and is_empty(board, step):
                 moves.append(step)
-                if r == start_row and valid_move(board, tile=dstep, isWhite=True) and is_empty(board, dstep):
+                if r == start_row and in_bounds(dstep) and is_empty(board, dstep):
                     moves.append(dstep)
 
             for dc in [-1, 1]:
                     move = (r+dr, c+dc)
-                    if 0 <= move[1] <= 7 and is_enemy(board, tile, Board.is_white(board.get_piece(move))):
+                    if in_bounds(move) and is_enemy(board, move, is_white):
                         moves.append(move)
 
 
@@ -77,7 +75,7 @@ def available_moves(board, tile=(0,0)) :
             while True:
                 r_curr += dr
                 c_curr += dc
-                if not valid_move(board, (r_curr, c_curr), isWhite=Board.is_white(piece)):
+                if not valid_move(board, (r_curr, c_curr), is_white):
                     break
                 moves.append((r_curr, c_curr))
                 # stop if capture
@@ -86,8 +84,8 @@ def available_moves(board, tile=(0,0)) :
         else :
             moves.append((r + dr, c + dc))
 
-    # js double checking
-    valid_moves = [move for move in moves if valid_move(board, move, isWhite=Board.is_white(piece))]
+    # double checking
+    valid_moves = [move for move in moves if valid_move(board, move, is_white)]
     return valid_moves
              
 def valid_move(board, tile, isWhite=None):
@@ -110,6 +108,30 @@ def is_empty(board, tile):
 def is_enemy(board, tile, isWhite):
     piece = board.get_piece(tile)
     return Board.is_white(piece) != isWhite
+
+def in_check(board, color=1) :
+    king_pos = None
+    king_val = Piece.WK.value if color == 1 else Piece.BK.value
+
+    for i in range(64) :
+            tile = (i//8, i%8)
+            piece = board.get_piece(tile)
+            if piece == king_val:
+                king_pos = tile
+                break
+    if king_pos is None:
+        raise ValueError('Invalid board: king is missing')
+    
+    for i in range(64):
+        tile = (i // 8, i % 8)
+        piece = board.get_piece(tile)
+
+        if piece * -color > 0: 
+            attacks = available_moves(board, tile)
+            if king_pos in attacks:
+                return True
+        
+    return False
 
 def all_moves(board, color=1) : # 1 = white, -1 = black
     output = []

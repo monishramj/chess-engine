@@ -49,7 +49,7 @@ class Board:
             else:
                 self.color = -1 
         except :
-            print("Invalid FEN, error in fen_to_board")
+            raise ValueError("Invalid FEN, error in fen_to_board")
 
     @staticmethod
     def ascii_to_piece(c) :
