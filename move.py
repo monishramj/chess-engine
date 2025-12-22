@@ -19,28 +19,24 @@ def available_moves(board, tile=(0,0)) :
     offsets = []
     extend = True
     match abs(piece):
-        case Piece.WP.value:
-            # will have to fix this eventually 
+        case Piece.WP.value:           
             if Board.is_white(piece):
-                if valid_move(board, tile=(r-1, c), isWhite=True) and board.get_piece((r-1, c)) == Piece.EMPTY.value:
-                    moves.append((r-1, c))
-                if r == 6 and valid_move(board, tile=(r-2, c), isWhite=True) and board.get_piece((r-2, c)) == Piece.EMPTY.value:
-                    moves.append((r-2, c))
-                    
-                for dc in [-1, 1]:
-                    move = (r-1, c+dc)
-                    if 0 <= move[1] <= 7 and Board.is_black(board.get_piece(move)):
-                        moves.append(move)
+                dr = -1
             else: 
-                if valid_move(board, tile=(r+1, c), isWhite=True) and board.get_piece((r+1, c)) == Piece.EMPTY.value:
-                    moves.append((r+1, c))
-                if r == 1 and valid_move(board, tile=(r+2, c), isWhite=True) and board.get_piece((r+2, c)) == Piece.EMPTY.value:
-                    moves.append((r+2, c))
+                dr = 1
+            step = (r+dr, c)
+            dstep = (r+(dr*2), c)
 
-                for dc in [-1, 1]:
-                    move = (r+1, c+dc)
+            if valid_move(board, tile=step, isWhite=True) and board.get_piece(step) == Piece.EMPTY.value:
+                    moves.append(step)
+            if r == 1 and valid_move(board, tile=dstep, isWhite=True) and board.get_piece(dstep) == Piece.EMPTY.value and board.get_piece(step) == Piece.EMPTY.value:
+                moves.append(dstep)
+
+            for dc in [-1, 1]:
+                    move = (r+dr, c+dc)
                     if 0 <= move[1] <= 7 and Board.is_white(board.get_piece(move)):
                         moves.append(move)
+
 
         case Piece.WK.value :
             offsets = [(-1, -1), (-1, 0), (-1, 1),
@@ -105,50 +101,33 @@ def valid_move(board, tile, isWhite=None):
 
 def all_moves(board, color=1) : # 1 = white, -1 = black
     output = []
-    for r in range(8) :
-        for c in range(8) :
-            # print('checking ', r, ',', c)
-            tile = (r,c)
+    for i in range(64) :
+            tile = (i//8, i%8)
             if board.get_piece(tile) * color > 0 :
                 moves = available_moves(board, tile)
                 for move in moves :
                     output.append((tile, move))
             else :
                 continue
-                
-    # print(output)
+
     return output
 
-def evaluate(board) :
+def evaluate(board):
+    basic_scores = {
+        Piece.WP.value: 1,   Piece.BP.value: -1,
+        Piece.WN.value: 3,   Piece.BN.value: -3,
+        Piece.WB.value: 3,   Piece.BB.value: -3,
+        Piece.WR.value: 5,   Piece.BR.value: -5,
+        Piece.WQ.value: 9,   Piece.BQ.value: -9,
+        Piece.WK.value: 100, Piece.BK.value: -100,
+    }
+    
     score = 0
-    for r in range(8) :
-        for c in range(8) :
-            tile = (r,c)
-            match (board.get_piece(tile)):
-                case Piece.WP.value:
-                    score += 1
-                case Piece.WN.value:
-                    score += 3
-                case Piece.WB.value:
-                    score += 3
-                case Piece.WR.value:
-                    score += 5
-                case Piece.WQ.value:
-                    score += 9
-                case Piece.WK.value:
-                    score += 100
-                case Piece.BP.value:
-                    score -= 1
-                case Piece.BN.value:
-                    score -= 3
-                case Piece.BB.value:
-                    score -= 3
-                case Piece.BR.value:
-                    score -= 5
-                case Piece.BQ.value:
-                    score -= 9
-                case Piece.BK.value:
-                    score -= 100
+    for r in range(8):
+        for c in range(8):
+            piece = board.get_piece((r, c))
+            score += basic_scores.get(piece, 0)
+    
     return score
                 
 def minimax(board, depth, color) :
