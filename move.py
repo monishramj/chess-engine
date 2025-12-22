@@ -133,7 +133,7 @@ def in_check(board, color=1) :
         
     return False
 
-def all_moves(board, color=1) : # 1 = white, -1 = black
+def basic_all_moves(board, color=1) : # 1 = white, -1 = black
     output = []
     for i in range(64) :
             tile = (i//8, i%8)
@@ -146,8 +146,20 @@ def all_moves(board, color=1) : # 1 = white, -1 = black
 
     return output
 
+def legal_all_moves(board, color=1) :
+    moves = basic_all_moves(board, color)
+    output = []
+    for move in moves:
+        start, end = move
+        new_b = move_piece(board, start, end)
+        if in_check(new_b, color):
+            continue
+        output.append(move)
+
+    return output
+
 def evaluate(board):
-    basic_scores = {
+    base = {
         Piece.WP.value: 1,   Piece.BP.value: -1,
         Piece.WN.value: 3,   Piece.BN.value: -3,
         Piece.WB.value: 3,   Piece.BB.value: -3,
@@ -160,7 +172,7 @@ def evaluate(board):
     for r in range(8):
         for c in range(8):
             piece = board.get_piece((r, c))
-            score += basic_scores.get(piece, 0)
+            score += base.get(piece, 0)
     
     return score
                 
@@ -168,7 +180,7 @@ def minimax(board, depth, color, a=-np.inf, b=np.inf) :
     if depth == 0:
         return evaluate(board), None
     
-    moves = all_moves(board, color)
+    moves = legal_all_moves(board, color)
     best_move = None
     best = -np.inf if color == 1 else np.inf
 

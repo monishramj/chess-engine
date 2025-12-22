@@ -8,7 +8,7 @@ b.fen_to_board('rnbqk1nr/pppppppp/8/4b3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1')
 print(b)
 print(md.available_moves(b, (3,4)))
 
-best, move = md.minimax(b, 5, -1)
+best, move = md.minimax(b, 4, -1)
 start, end = move
 print(md.move_piece(b, start, end))
 
