@@ -164,7 +164,7 @@ def evaluate(board):
     
     return score
                 
-def minimax(board, depth, color) :
+def minimax(board, depth, color, a=-np.inf, b=np.inf) :
     if depth == 0:
         return evaluate(board), None
     
@@ -174,16 +174,21 @@ def minimax(board, depth, color) :
 
     for start, end in moves:
         new_board = move_piece(board, start, end)
-        score, unused = minimax(new_board, depth - 1, -color)
+        score, unused = minimax(new_board, depth - 1, -color, a, b)
 
         if color == 1: 
             if score > best:
                 best = score
                 best_move = (start, end)
+            a = max(a, best)
+            if b <= a :
+                break
         else: 
             if score < best:
                 best = score
                 best_move = (start, end)
-                
+            b = min(b, best)
+            if b <= a:
+                break
     return best, best_move
         
