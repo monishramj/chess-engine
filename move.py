@@ -109,7 +109,7 @@ def is_enemy(board, tile, isWhite):
     piece = board.get_piece(tile)
     return Board.is_white(piece) != isWhite
 
-def in_check(board, color=1) :
+def in_check(board, color=1) : # NEED TO DO IT FROM KING'S PERSPECTIVE
     king_pos = None
     king_val = Piece.WK.value if color == 1 else Piece.BK.value
 
@@ -123,13 +123,9 @@ def in_check(board, color=1) :
         raise ValueError('Invalid board: king is missing')
     
     for i in range(64):
-        tile = (i // 8, i % 8)
-        piece = board.get_piece(tile)
-
-        if piece * -color > 0: 
-            attacks = available_moves(board, tile)
-            if king_pos in attacks:
-                return True
+        offsets = [(-1, -1), (-1, 0), (-1, 1),
+                       ( 0, -1),          ( 0, 1),
+                       ( 1, -1), ( 1, 0), ( 1, 1)]
         
     return False
 
@@ -150,9 +146,7 @@ def legal_all_moves(board, color=1) :
     moves = basic_all_moves(board, color)
     output = []
     for move in moves:
-        start, end = move
-        new_b = move_piece(board, start, end)
-        if in_check(new_b, color):
+        if in_check(board, color):
             continue
         output.append(move)
 
