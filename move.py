@@ -3,7 +3,7 @@ import numpy as np
 
 def move_piece(board, start=(0, 0), end=(0, 0)) :
     new_board = Board()
-    new_board.board = board.board.copy()
+    new_board.pieces = board.board.copy()
 
     piece = new_board.get_piece(start)
     new_board.set_piece(tile=end, val=piece)

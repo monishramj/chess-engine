@@ -1,6 +1,8 @@
 from board import Board
-import move as md
+
 
 b = Board()
-
+b.fen_to_board()
+print(b)
+print(bin(b.pieces['WP']))
 
