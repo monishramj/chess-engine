@@ -1,8 +1,6 @@
 from enum import Enum
 
 
-
-# WE'RE GOING TO TRY A BITBOARD BASED SYSTEM
 class Board:
     def __init__(self) :
         self.pieces = {
@@ -19,7 +17,6 @@ class Board:
             "BQ": 0,
             "BK": 0
         }
-
         self.color = 1
         
     @staticmethod
@@ -32,19 +29,58 @@ class Board:
     
     @staticmethod
     def white_occ(board) :
-        return (board.board["WP"] | board.board["WN"] | board.board["WB"] |
-                board.board["WR"] | board.board["WQ"] | board.board["WK"])
+        return (board.pieces["WP"] | board.pieces["WN"] | board.pieces["WB"] |
+                board.pieces["WR"] | board.pieces["WQ"] | board.pieces["WK"])
 
     @staticmethod
     def black_occ(board) :
-        return (board.board["BP"] | board.board["BN"] | board.board["BB"] |
-                board.board["BR"] | board.board["BQ"] | board.board["BK"])
+        return (board.pieces["BP"] | board.pieces["BN"] | board.pieces["BB"] |
+                board.pieces["BR"] | board.pieces["BQ"] | board.pieces["BK"])
 
     @staticmethod
     def all_occ(board) :
         return Board.white_occ(board) | Board.black_occ(board)
         
-    # https://www.365chess.com/board_editor.php
+    def is_occ(self, tile) :
+        return ((1 << tile) & Board.all_occ(self)) != 0
+    
+    def is_white(self, tile) :
+        return ((1 << tile) & Board.white_occ(self)) != 0
+    
+    def is_black(self, tile) :
+        return ((1 << tile) & Board.black_occ(self)) != 0
+    
+    def piece_at(self, tile):
+        mask = 1 << tile
+        for name, bb in self.pieces.items():
+            if bb & mask:
+                return name
+        return None
+    
+    def move(self, start, end):
+        if not self.is_occ(start) :
+            return None
+        
+        start_tile = 1 << start
+        end_tile = 1 << end
+
+        piece = self.piece_at(start) 
+        if piece :
+            output = self.copy()
+            output.pieces[piece] = (output.pieces[piece] ^ start_tile) | end_tile
+            output.color *= -1
+
+            #! remove existing piece there, don't forget to check for checks and same piece later :Sob:
+            for other, o_bb in output.pieces.items():
+                if end_tile & o_bb and other != piece:
+                    output.pieces[other] ^= end_tile
+
+            return output
+            
+        raise ValueError(f'Invalid move.')
+
+
+    #? https://www.365chess.com/board_editor.php
     def fen_to_board(self, fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') :
         fen_pieces = {
             'P': "WP", 'N': "WN", 'B': "WB", 'R': "WR", 'Q': "WQ", 'K': "WK",
@@ -105,9 +141,11 @@ class Board:
 
         return "\n".join(lines)
     
-
-
-
+    def copy(self) :
+        b = Board()
+        b.pieces = self.pieces.copy()
+        b.color = self.color
+        return b
 
     
 
