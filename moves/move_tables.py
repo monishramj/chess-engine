@@ -3,9 +3,14 @@ from board import Board as b
 def bitmask(num) :
     return num & ((1 << 64) - 1)
 
+
+
 #--------------#
 #     SETUP    #
 #--------------#
+# https://josherv.in/2021/03/19/chess-1/
+
+
 COLUMNS = [0x0101010101010101 << i for i in range(8)]
 ROWS = [0xFF << (i*8) for i in range(8)]
 KNIGHT_MOVES = {
@@ -19,13 +24,15 @@ KNIGHT_MOVES = {
         -17: bitmask(~(COLUMNS[0] | ROWS[0] | ROWS[1])),
     }
 
+
+
 def compute_knight_move(bb) : 
     # https://www.chessprogramming.org/Knight_Pattern
     # https://stackoverflow.com/questions/72296626/chess-bitboard-move-generation#:~:text=When%20you%20generate%20moves%20you,later%20stages%20of%20your%20AI.
-    moves = []
+    moves = 0
     for offset, mask in KNIGHT_MOVES.items() : 
         if mask & bb :
-            moves.append(bitmask(bb << offset if offset > 0 else bb >> -offset))
+            moves |= bitmask(bb << offset if offset > 0 else bb >> -offset)
 
     return moves
 
@@ -35,11 +42,23 @@ def compute_knight_move(bb) :
     
     # print(moves)
 
-def compute_knight_tables() :
+def compute_king_move(bb) : 
+    # https://www.chessprogramming.org/King_Pattern
+    right = bitmask(bb << 1) & ~COLUMNS[0]         
+    left = bitmask(bb >> 1) & ~COLUMNS[7]    
+    horiz = right | left
+
+    moves = horiz | bb
+    up = bitmask(moves << 8)
+    down = bitmask(moves >> 8)
+
+    return up | down | left | right
+
+def compute_tables(compute_move) :
     table = {}
     for i in range(64):
         pos = 1 << i
-        moves = compute_knight_move(pos)
+        moves = compute_move(pos)
         table[pos] = moves
 
     return table

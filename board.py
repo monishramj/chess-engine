@@ -19,6 +19,8 @@ class Board :
         }
         self.color = 1
         
+        # TODO: implement rest of fields
+        
     @staticmethod
     def sq(r, c) :
         return r * 8 + c
