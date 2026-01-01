@@ -8,7 +8,7 @@ def bitmask(num) :
 #--------------#
 COLUMNS = [0x0101010101010101 << i for i in range(8)]
 ROWS = [0xFF << (i*8) for i in range(8)]
-KNIGHT_MASKS = {
+KNIGHT_MOVES = {
         6: bitmask(~(COLUMNS[0] | COLUMNS[1] | ROWS[7])),
         10: bitmask(~(COLUMNS[6] | COLUMNS[7] | ROWS[7])),
         15: bitmask(~(COLUMNS[0] | ROWS[6] | ROWS[7])),
@@ -19,18 +19,13 @@ KNIGHT_MASKS = {
         -17: bitmask(~(COLUMNS[0] | ROWS[0] | ROWS[1])),
     }
 
-
-
-def knight_moves(bb) : 
+def compute_knight_move(bb) : 
     # https://www.chessprogramming.org/Knight_Pattern
     # https://stackoverflow.com/questions/72296626/chess-bitboard-move-generation#:~:text=When%20you%20generate%20moves%20you,later%20stages%20of%20your%20AI.
-    offsets = [6, 15, 17, 10]
     moves = []
-    for offset in offsets : 
-        if KNIGHT_MASKS[offset] & bb:
-            moves.append(bb << offset)
-        if KNIGHT_MASKS[-offset] & bb:
-            moves.append(bb >> offset)
+    for offset, mask in KNIGHT_MOVES.items() : 
+        if mask & bb :
+            moves.append(bitmask(bb << offset if offset > 0 else bb >> -offset))
 
     return moves
 
@@ -44,7 +39,7 @@ def compute_knight_tables() :
     table = {}
     for i in range(64):
         pos = 1 << i
-        moves = knight_moves(pos)
+        moves = compute_knight_move(pos)
         table[pos] = moves
 
     return table
