@@ -1,18 +1,28 @@
 from board import Board as b
 
+#------------------------#
+#     SETUP & HELPERS    #
+#------------------------#
+# https://josherv.in/2021/03/19/chess-1/
+
 def bitmask(num) :
     return num & ((1 << 64) - 1)
 
-
-
-#--------------#
-#     SETUP    #
-#--------------#
-# https://josherv.in/2021/03/19/chess-1/
-
-
 COLUMNS = [0x0101010101010101 << i for i in range(8)]
 ROWS = [0xFF << (i*8) for i in range(8)]
+
+def east_one(bb) :
+    return bitmask(bb << 1) & ~COLUMNS[0]
+
+def west_one(bb) :
+    return bitmask(bb >> 1) & ~COLUMNS[7]   
+
+def north_one(bb) :
+    return bitmask(bb << 8)
+
+def south_one(bb) :
+    return bitmask(bb >> 8)
+
 KNIGHT_MOVES = {
         6: bitmask(~(COLUMNS[0] | COLUMNS[1] | ROWS[7])),
         10: bitmask(~(COLUMNS[6] | COLUMNS[7] | ROWS[7])),
@@ -24,7 +34,11 @@ KNIGHT_MOVES = {
         -17: bitmask(~(COLUMNS[0] | ROWS[0] | ROWS[1])),
     }
 
-
+#---------------------#
+#     COMPUTATIONS    #
+#---------------------#
+# THESE SHOULD BE LOOKUP ONLY, IDEAA: NO BLOCKS, NO OTHER PIECES
+# ---- should be handled in move.py
 
 def compute_knight_move(bb) : 
     # https://www.chessprogramming.org/Knight_Pattern
@@ -36,23 +50,24 @@ def compute_knight_move(bb) :
 
     return moves
 
-    # for move in moves:
-    #     b.print_bb(move)
-    #     print('---------')
-    
-    # print(moves)
-
 def compute_king_move(bb) : 
-    # https://www.chessprogramming.org/King_Pattern
-    right = bitmask(bb << 1) & ~COLUMNS[0]         
-    left = bitmask(bb >> 1) & ~COLUMNS[7]    
-    horiz = right | left
+    # https://www.chessprogramming.org/King_Pattern 
+    horiz = east_one(bb) | west_one(bb)
+    dr = horiz | bb
 
-    moves = horiz | bb
-    up = bitmask(moves << 8)
-    down = bitmask(moves >> 8)
+    return north_one(dr) | south_one(dr) | horiz
 
-    return up | down | left | right
+def compute_pawn_move(bb, color) :
+    move = north_one if color > 0 else south_one
+    start_rank = ROWS[1] if color > 0 else ROWS[6]
+
+    step = move(bb)
+    two_step = move(step) if start_rank & bb else 0
+
+    moves = step | two_step
+    attacks = east_one(step) | west_one(step)
+
+    return moves, attacks
 
 def compute_tables(compute_move) :
     table = {}
