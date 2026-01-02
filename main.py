@@ -11,6 +11,5 @@ print(b)
 Board.print_bb(center)
 print(center)
 pawn_moves, pawn_atks = tb.compute_pawn_move(center, -1)
-b.print_bb(pawn_moves)
-b.print_bb(pawn_atks)
+b.print_bb(tb.compute_queen_move(center))
 
