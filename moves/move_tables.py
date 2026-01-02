@@ -13,38 +13,33 @@ ROWS = [0xFF << (i*8) for i in range(8)]
 
 def east_one(bb) :
     return bitmask(bb << 1) & ~COLUMNS[0]
-
 def west_one(bb) :
     return bitmask(bb >> 1) & ~COLUMNS[7]   
-
 def north_one(bb) :
     return bitmask(bb << 8)
-
 def south_one(bb) :
     return bitmask(bb >> 8)
 
-KNIGHT_MOVES = {
-        6: bitmask(~(COLUMNS[0] | COLUMNS[1] | ROWS[7])),
-        10: bitmask(~(COLUMNS[6] | COLUMNS[7] | ROWS[7])),
-        15: bitmask(~(COLUMNS[0] | ROWS[6] | ROWS[7])),
-        17: bitmask(~(COLUMNS[7] | ROWS[6] | ROWS[7])),
-        -6: bitmask(~(COLUMNS[6] | COLUMNS[7] | ROWS[0])),
-        -10: bitmask(~(COLUMNS[0] | COLUMNS[1] | ROWS[0])),
-        -15: bitmask(~(COLUMNS[7] | ROWS[0] | ROWS[1])),
-        -17: bitmask(~(COLUMNS[0] | ROWS[0] | ROWS[1])),
-    }
+KNIGHT_SETUP = {
+    6: bitmask(~(COLUMNS[0] | COLUMNS[1] | ROWS[7])),
+    10: bitmask(~(COLUMNS[6] | COLUMNS[7] | ROWS[7])),
+    15: bitmask(~(COLUMNS[0] | ROWS[6] | ROWS[7])),
+    17: bitmask(~(COLUMNS[7] | ROWS[6] | ROWS[7])),
+    -6: bitmask(~(COLUMNS[6] | COLUMNS[7] | ROWS[0])),
+    -10: bitmask(~(COLUMNS[0] | COLUMNS[1] | ROWS[0])),
+    -15: bitmask(~(COLUMNS[7] | ROWS[0] | ROWS[1])),
+    -17: bitmask(~(COLUMNS[0] | ROWS[0] | ROWS[1])),
+}
 
 #---------------------#
 #     COMPUTATIONS    #
 #---------------------#
-# THESE SHOULD BE LOOKUP ONLY, IDEAA: NO BLOCKS, NO OTHER PIECES
-# ---- should be handled in move.py
 
 def compute_knight_move(bb) : 
     # https://www.chessprogramming.org/Knight_Pattern
     # https://stackoverflow.com/questions/72296626/chess-bitboard-move-generation#:~:text=When%20you%20generate%20moves%20you,later%20stages%20of%20your%20AI.
     moves = 0
-    for offset, mask in KNIGHT_MOVES.items() : 
+    for offset, mask in KNIGHT_SETUP.items() : 
         if mask & bb :
             moves |= bitmask(bb << offset if offset > 0 else bb >> -offset)
 
@@ -104,3 +99,28 @@ def compute_tables(compute_move) :
         table[pos] = moves
 
     return table
+
+def compute_pawn_tables(compute_move, color) :
+    moves = {}
+    attacks = {}
+
+    for i in range(64):
+        pos = 1 << i
+        moves, attacks = compute_move(pos, color)
+        moves[pos] = moves
+        attacks[pos] = attacks
+
+    return moves, attacks
+
+#---------------------#
+#     WRITE TABLES    #
+#---------------------#
+
+KNIGHT_MOVES = compute_tables(compute_knight_move)
+KING_MOVES = compute_tables(compute_king_move)
+BISHOP_MOVES = compute_tables(compute_bishop_move)
+ROOK_MOVES = compute_tables(compute_rook_move)
+QUEEN_MOVES = compute_tables(compute_queen_move)
+
+PAWN_BLACK_MOVES, PAWN_BLACK_ATTACKS = compute_pawn_tables(compute_pawn_move, -1)
+PAWN_WHITE_MOVES, PAWN_WHITE_ATTACKS = compute_pawn_tables(compute_pawn_move, 1)
