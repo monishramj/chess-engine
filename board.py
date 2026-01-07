@@ -1,6 +1,3 @@
-from enum import Enum
-
-
 class Board :
     def __init__(self) :
         self.pieces = {
@@ -38,16 +35,28 @@ class Board :
                 self.pieces["BR"] | self.pieces["BQ"] | self.pieces["BK"])
 
     def all_occ(self) :
-        return Board.white_occ() | Board.black_occ()
+        return Board.white_occ(self) | Board.black_occ(self)
         
     def is_occ(self, tile) :
-        return ((1 << tile) & Board.all_occ()) != 0
+        return ((1 << tile) & Board.all_occ(self)) != 0
     
     def is_white(self, tile) :
-        return ((1 << tile) & Board.white_occ()) != 0
+        return ((1 << tile) & Board.white_occ(self)) != 0
     
     def is_black(self, tile) :
-        return ((1 << tile) & Board.black_occ()) != 0
+        return ((1 << tile) & Board.black_occ(self)) != 0
+    
+    def same_occ(self) :
+        if self.color > 0:
+            return Board.white_occ(self)
+        else:
+            return Board.black_occ(self)
+        
+    def opp_occ(self) :
+        if self.color > 0:
+            return Board.black_occ(self)
+        else:
+            return Board.white_occ(self)
     
     def piece_at(self, tile) :
         mask = 1 << tile

@@ -35,7 +35,7 @@ KNIGHT_SETUP = {
 #     COMPUTATIONS    #
 #---------------------#
 
-def compute_knight_move(bb) : 
+def _compute_knight_move(bb) : 
     # https://www.chessprogramming.org/Knight_Pattern
     # https://stackoverflow.com/questions/72296626/chess-bitboard-move-generation#:~:text=When%20you%20generate%20moves%20you,later%20stages%20of%20your%20AI.
     moves = 0
@@ -45,14 +45,14 @@ def compute_knight_move(bb) :
 
     return moves
 
-def compute_king_move(bb) : 
+def _compute_king_move(bb) : 
     # https://www.chessprogramming.org/King_Pattern 
     horiz = east_one(bb) | west_one(bb)
     dr = horiz | bb
 
     return north_one(dr) | south_one(dr) | horiz
 
-def compute_pawn_move(bb, color) :
+def _compute_pawn_move(bb, color) :
     move = north_one if color > 0 else south_one
     start_rank = ROWS[1] if color > 0 else ROWS[6]
 
@@ -64,7 +64,7 @@ def compute_pawn_move(bb, color) :
 
     return moves, attacks
 
-def compute_bishop_move(bb) :
+def _compute_bishop_move(bb) :
     moves = 0
     nw = bb
     sw = bb
@@ -82,14 +82,14 @@ def compute_bishop_move(bb) :
 
     return moves
 
-def compute_rook_move(bb) :
+def _compute_rook_move(bb) :
     sq = bb.bit_length() - 1
     moves = (COLUMNS[sq % 8] | ROWS[sq // 8]) ^ bb
 
     return moves 
 
-def compute_queen_move(bb) :
-    return compute_bishop_move(bb) | compute_rook_move(bb)
+def _compute_queen_move(bb) :
+    return _compute_bishop_move(bb) | _compute_rook_move(bb)
         
 def compute_tables(compute_move) :
     table = {}
@@ -106,21 +106,21 @@ def compute_pawn_tables(compute_move, color) :
 
     for i in range(64):
         pos = 1 << i
-        moves, attacks = compute_move(pos, color)
-        moves[pos] = moves
-        attacks[pos] = attacks
+        m, a = compute_move(pos, color)
+        moves[pos] = m
+        attacks[pos] = a
 
     return moves, attacks
 
-#---------------------#
-#     WRITE TABLES    #
-#---------------------#
+#----------------------#
+#     LOOKUP TABLES    #
+#----------------------#
 
-KNIGHT_MOVES = compute_tables(compute_knight_move)
-KING_MOVES = compute_tables(compute_king_move)
-BISHOP_MOVES = compute_tables(compute_bishop_move)
-ROOK_MOVES = compute_tables(compute_rook_move)
-QUEEN_MOVES = compute_tables(compute_queen_move)
+KNIGHT_MOVES = compute_tables(_compute_knight_move)
+KING_MOVES = compute_tables(_compute_king_move)
+# BISHOP_MOVES = compute_tables(_compute_bishop_move)
+# ROOK_MOVES = compute_tables(_compute_rook_move)
+# QUEEN_MOVES = compute_tables(_compute_queen_move)
 
-PAWN_BLACK_MOVES, PAWN_BLACK_ATTACKS = compute_pawn_tables(compute_pawn_move, -1)
-PAWN_WHITE_MOVES, PAWN_WHITE_ATTACKS = compute_pawn_tables(compute_pawn_move, 1)
+PAWN_BLACK_MOVES, PAWN_BLACK_ATTACKS = compute_pawn_tables(_compute_pawn_move, -1)
+PAWN_WHITE_MOVES, PAWN_WHITE_ATTACKS = compute_pawn_tables(_compute_pawn_move, 1)
