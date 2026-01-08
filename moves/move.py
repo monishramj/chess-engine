@@ -32,9 +32,9 @@ def reverse_bb(bb) :
 
     return tb.bitmask(bb)
 
-#----------------#
-#     LOOKUPS    #
-#----------------#
+#------------------------#
+#   SINGULAR PIECE MVM   #
+#------------------------#
 
 def knight_lookup(bb, same_occ) :
     return tb.KNIGHT_MOVES[bb] & ~same_occ
@@ -66,46 +66,47 @@ def rook_hq(bb, occ) :
 
     return hq(bb, occ, r) | hq(bb, occ, c)
 
+def bishop_hq(bb, occ) :
+    diag = tb.DIAGONALS[bb]
+    anti_diag = tb.ANTI_DIAGONALS[bb]
+
+    return hq(bb, occ, diag) | hq(bb, occ, anti_diag)
+
+def queen_hq(bb, occ):
+    return rook_hq(bb, occ) | bishop_hq(bb, occ)
+
 #--------------#
 #     MOVES    #
 #--------------#
 
-def knights_pseudo_moves(board: b) :
+def step_pseudo_moves(board: b, piece: str, lookup) :
+    if not (piece == 'N' or piece == 'K'):
+        raise ValueError('Wrong piece, only use N or K for step_pseudo_moves()')
+    
     same_occ = board.same_occ()
-    bb = board.pieces['WN'] if board.color > 0 else board.pieces['BN']
+    bb = board.pieces['W' + piece] if board.color > 0 else board.pieces['B' + piece]
     moves = []
 
     while bb:
         bb, least = pop_lssb(bb)
         start = lssb_sq(least)
-        possible_moves = knight_lookup(least, same_occ)
+        possible_moves = lookup(least, same_occ)
         moves.extend(moves_to_tuples(possible_moves, start))
 
     return moves
 
-def king_pseudo_moves(board: b) :
-    same_occ = board.same_occ()
-    bb = board.pieces['WK'] if board.color > 0 else board.pieces['BK']
-    moves = []
-
-    while bb:
-        bb, least = pop_lssb(bb)
-        start = lssb_sq(least)
-        possible_moves = king_lookup(least, same_occ)
-        moves.extend(moves_to_tuples(possible_moves, start))
-
-    return moves
-
-def rooks_pseudo_moves(board: b) :
+def sliding_pseudo_moves(board: b, piece: str, hq) :
+    if not (piece == 'B' or piece == 'R' or piece == 'Q'):
+        raise ValueError('Wrong piece, only use B, R, or Q for step_pseudo_moves()')
     same_occ = board.same_occ()
     all_occ = board.all_occ()
-    bb = board.pieces['WR'] if board.color > 0 else board.pieces['BR']
+    bb = board.pieces['W' + piece] if board.color > 0 else board.pieces['B' + piece]
     moves = []
 
     while bb:
         bb, least = pop_lssb(bb)
         start = lssb_sq(least)
-        possible_moves = rook_hq(least, all_occ) & ~ same_occ
+        possible_moves = hq(least, all_occ) & ~ same_occ
         moves.extend(moves_to_tuples(possible_moves, start))
 
     return moves

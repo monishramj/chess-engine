@@ -35,6 +35,30 @@ KNIGHT_SETUP = {
 #     COMPUTATIONS    #
 #---------------------#
 
+def _compute_diagonal(bb) :
+    mask = bb
+    nw = bb
+    se = bb
+    
+    while nw := north_one(west_one(nw)): # wow walrus operator!!
+        mask |= nw 
+    while se := south_one(east_one(se)):
+        mask |= se
+
+    return mask
+
+def _compute_antidiagonal(bb) :
+    mask = bb
+    ne = bb
+    sw = bb
+
+    while ne := south_one(west_one(ne)): 
+        mask |= ne
+    while sw := north_one(east_one(sw)):
+        mask |= sw
+
+    return mask
+
 def _compute_knight_move(bb) : 
     # https://www.chessprogramming.org/Knight_Pattern
     # https://stackoverflow.com/questions/72296626/chess-bitboard-move-generation#:~:text=When%20you%20generate%20moves%20you,later%20stages%20of%20your%20AI.
@@ -72,7 +96,7 @@ def _compute_pawn_move(bb, color) :
 #     ne = bb
 
 #     while nw := north_one(west_one(nw)): # wow walrus operator!!
-#         moves |= nw
+#         moves |= nw 
 #     while sw := south_one(west_one(sw)):
 #         moves |= sw
 #     while se := south_one(east_one(se)):
@@ -116,6 +140,9 @@ def compute_pawn_tables(compute_move, color) :
 #     LOOKUP TABLES    #
 #----------------------#
 
+DIAGONALS = compute_tables(_compute_diagonal)
+ANTI_DIAGONALS = compute_tables(_compute_antidiagonal)
+
 KNIGHT_MOVES = compute_tables(_compute_knight_move)
 KING_MOVES = compute_tables(_compute_king_move)
 # BISHOP_MOVES = compute_tables(_compute_bishop_move)
@@ -124,3 +151,4 @@ KING_MOVES = compute_tables(_compute_king_move)
 
 PAWN_BLACK_MOVES, PAWN_BLACK_ATTACKS = compute_pawn_tables(_compute_pawn_move, -1)
 PAWN_WHITE_MOVES, PAWN_WHITE_ATTACKS = compute_pawn_tables(_compute_pawn_move, 1)
+
