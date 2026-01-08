@@ -64,32 +64,32 @@ def _compute_pawn_move(bb, color) :
 
     return moves, attacks
 
-def _compute_bishop_move(bb) :
-    moves = 0
-    nw = bb
-    sw = bb
-    se = bb
-    ne = bb
+# def _compute_bishop_move(bb) :
+#     moves = 0
+#     nw = bb
+#     sw = bb
+#     se = bb
+#     ne = bb
 
-    while nw := north_one(west_one(nw)): # wow walrus operator!!
-        moves |= nw
-    while sw := south_one(west_one(sw)):
-        moves |= sw
-    while se := south_one(east_one(se)):
-        moves |= se
-    while ne := north_one(east_one(ne)):
-        moves |= ne
+#     while nw := north_one(west_one(nw)): # wow walrus operator!!
+#         moves |= nw
+#     while sw := south_one(west_one(sw)):
+#         moves |= sw
+#     while se := south_one(east_one(se)):
+#         moves |= se
+#     while ne := north_one(east_one(ne)):
+#         moves |= ne
 
-    return moves
+#     return moves
 
-def _compute_rook_move(bb) :
-    sq = bb.bit_length() - 1
-    moves = (COLUMNS[sq % 8] | ROWS[sq // 8]) ^ bb
+# def _compute_rook_move(bb) :
+#     sq = bb.bit_length() - 1
+#     moves = (COLUMNS[sq % 8] | ROWS[sq // 8]) ^ bb
 
-    return moves 
+#     return moves 
 
-def _compute_queen_move(bb) :
-    return _compute_bishop_move(bb) | _compute_rook_move(bb)
+# def _compute_queen_move(bb) :
+#     return _compute_bishop_move(bb) | _compute_rook_move(bb)
         
 def compute_tables(compute_move) :
     table = {}
