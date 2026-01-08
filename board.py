@@ -15,16 +15,17 @@ class Board :
             "BK" : 0
         }
         self.color = 1
+        self.ep_sq = 0 # TODO!!! 
         
         # TODO: implement rest of fields
         
-    @staticmethod
-    def sq(r, c) :
-        return r * 8 + c
+    # @staticmethod
+    # def sq(r, c) :
+    #     return r * 8 + c
     
-    @staticmethod
-    def place(s) :
-        return 1 << s
+    # @staticmethod
+    # def place(s) :
+    #     return 1 << s
     
     def white_occ(self) :
         return (self.pieces["WP"] | self.pieces["WN"] | self.pieces["WB"] |
@@ -120,7 +121,10 @@ class Board :
                         i += 1
                 i -= 16
             
-            self.color = 1 if fields[1]=='w' else -1 
+
+            self.color = 1 if fields[1] == 'w' else -1 
+            
+ 
         except Exception as e :
             raise ValueError(f"Invalid FEN, error : {e}")
 

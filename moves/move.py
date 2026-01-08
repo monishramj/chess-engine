@@ -32,21 +32,29 @@ def reverse_bb(bb) :
 
     return tb.bitmask(bb)
 
-#------------------------#
-#   SINGULAR PIECE MVM   #
-#------------------------#
+#--------------------------#
+#   SINGULAR PIECE MOVES   #
+#--------------------------#
 
 def knight_lookup(bb, same_occ) :
-    return tb.KNIGHT_MOVES[bb] & ~same_occ
+    return tb.KNIGHT_MOVES[bb] & tb.bitmask(~same_occ)
 
 def king_lookup(bb, same_occ) :
-    return tb.KING_MOVES[bb] & ~same_occ
+    return tb.KING_MOVES[bb] & tb.bitmask(~same_occ)
 
-def pawn_lookup(bb, color, same_occ, opp_occ) : # TODO: implement ep
+def pawn_lookup(bb, color, all_occ, opp_occ, ep=0) :
     moves = tb.PAWN_WHITE_MOVES[bb] if color > 0 else tb.PAWN_BLACK_MOVES[bb]
     attacks = tb.PAWN_WHITE_ATTACKS[bb] if color > 0 else tb.PAWN_BLACK_ATTACKS[bb]
+    step = tb.north_one(bb) if color > 0 else tb.south_one(bb)
 
-    return (moves & ~(same_occ | opp_occ)) | (attacks & opp_occ) # issue, double pawn move at beginning can be done if piece in middle
+    if step & all_occ: # might need refining, leave as if else for now ig
+        moves = 0
+    else:
+        moves &= tb.bitmask(~all_occ)
+
+    attacks &= opp_occ | ep
+
+    return moves | attacks 
 
 def hq(bb, occ, mask) : # hyperbola quintessence
     mask_occ = mask & occ
@@ -75,9 +83,9 @@ def bishop_hq(bb, occ) :
 def queen_hq(bb, occ):
     return rook_hq(bb, occ) | bishop_hq(bb, occ)
 
-#--------------#
-#     MOVES    #
-#--------------#
+#---------------------#
+#     PSEUDO MOVES    #
+#---------------------#
 
 def step_pseudo_moves(board: b, piece: str, lookup) :
     if not (piece == 'N' or piece == 'K'):
@@ -98,6 +106,7 @@ def step_pseudo_moves(board: b, piece: str, lookup) :
 def sliding_pseudo_moves(board: b, piece: str, hq) :
     if not (piece == 'B' or piece == 'R' or piece == 'Q'):
         raise ValueError('Wrong piece, only use B, R, or Q for step_pseudo_moves()')
+    
     same_occ = board.same_occ()
     all_occ = board.all_occ()
     bb = board.pieces['W' + piece] if board.color > 0 else board.pieces['B' + piece]
@@ -106,7 +115,23 @@ def sliding_pseudo_moves(board: b, piece: str, hq) :
     while bb:
         bb, least = pop_lssb(bb)
         start = lssb_sq(least)
-        possible_moves = hq(least, all_occ) & ~ same_occ
+        possible_moves = hq(least, all_occ) & tb.bitmask(~same_occ)
+        moves.extend(moves_to_tuples(possible_moves, start))
+
+    return moves
+
+def pawn_pseudo_moves(board: b) :
+    bb = board.pieces['WP'] if board.color > 0 else board.pieces['BP']
+    color = board.color
+    opp_occ = board.opp_occ()
+    all_occ = board.all_occ()
+    ep = board.ep_sq
+    moves = []
+
+    while bb:
+        bb, least = pop_lssb(bb)
+        start = lssb_sq(least)
+        possible_moves = pawn_lookup(least, color, all_occ=all_occ, opp_occ=opp_occ, ep=ep)
         moves.extend(moves_to_tuples(possible_moves, start))
 
     return moves
