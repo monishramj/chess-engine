@@ -58,7 +58,27 @@ class Board :
             return Board.black_occ(self)
         else:
             return Board.white_occ(self)
+        
+    def opp_piece(self, piece) :
+        pieces = ['P', 'N', 'B', 'R', 'Q', 'K']
+        if piece not in pieces:
+            raise ValueError('Invalid piece')
+        
+        if self.color > 0:
+            return self.pieces['B' + piece]
+        else:
+            return self.pieces['W' + piece]
     
+    def same_piece(self, piece) :
+        pieces = ['P', 'N', 'B', 'R', 'Q', 'K']
+        if piece not in pieces:
+            raise ValueError('Invalid piece')
+        
+        if self.color > 0:
+            return self.pieces['W' + piece]
+        else:
+            return self.pieces['B' + piece]
+             
     def piece_at(self, tile) :
         mask = 1 << tile
         for name, bb in self.pieces.items():
