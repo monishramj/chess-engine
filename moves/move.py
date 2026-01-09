@@ -32,15 +32,18 @@ def reverse_bb(bb) :
 
     return tb.bitmask(bb)
 
+def not_bb(bb) :
+    return tb.bitmask(~bb)
+
 #--------------------------#
 #   SINGULAR PIECE MOVES   #
 #--------------------------#
 
 def knight_lookup(bb, same_occ) :
-    return tb.KNIGHT_MOVES[bb] & tb.bitmask(~same_occ)
+    return tb.KNIGHT_MOVES[bb] & not_bb(same_occ)
 
 def king_lookup(bb, same_occ) :
-    return tb.KING_MOVES[bb] & tb.bitmask(~same_occ)
+    return tb.KING_MOVES[bb] & not_bb(same_occ)
 
 def pawn_lookup(bb, color, all_occ, opp_occ, ep=0) :
     moves = tb.PAWN_WHITE_MOVES[bb] if color > 0 else tb.PAWN_BLACK_MOVES[bb]
@@ -50,7 +53,7 @@ def pawn_lookup(bb, color, all_occ, opp_occ, ep=0) :
     if step & all_occ: # might need refining, leave as if else for now ig
         moves = 0
     else:
-        moves &= tb.bitmask(~all_occ)
+        moves &= not_bb(all_occ)
 
     attacks &= opp_occ | ep
 
@@ -115,7 +118,7 @@ def sliding_pseudo_moves(board: b, piece: str, hq) :
     while bb:
         bb, least = pop_lssb(bb)
         start = lssb_sq(least)
-        possible_moves = hq(least, all_occ) & tb.bitmask(~same_occ)
+        possible_moves = hq(least, all_occ) & not_bb(same_occ)
         moves.extend(moves_to_tuples(possible_moves, start))
 
     return moves
@@ -145,21 +148,20 @@ def in_check(board: b) -> bool :
     same_occ = board.same_occ()
     all_occ = board.all_occ()
     
-    if knight_lookup(bb, same_occ) & board.opp_piece('N') :
+    if tb.KNIGHT_MOVES[bb] & board.opp_piece('N') :
+        return True
+    if tb.KING_MOVES[bb] & board.opp_piece('K') :
         return True
     
-    if king_lookup(bb, same_occ) & board.opp_piece('K') :
+    # switched for opponent attacks
+    king_pawn_attacks = tb.PAWN_BLACK_ATTACKS[bb] if board.color > 0 else tb.PAWN_WHITE_ATTACKS[bb] 
+    if (king_pawn_attacks) & board.opp_piece('P') :
         return True
     
     if rook_hq(bb, all_occ) & (board.opp_piece('R') | board.opp_piece('Q')) :
         return True
-    
     if bishop_hq(bb, all_occ) & (board.opp_piece('B') | board.opp_piece('Q')) :
         return True
     
-    king_pawn_attacks = tb.PAWN_WHITE_ATTACKS[bb] if board.color > 0 else tb.PAWN_BLACK_ATTACKS[bb] 
-    # leave this at the end, so less computation if others True
-    if (king_pawn_attacks) & board.opp_piece('P') :
-        return True
     
     return False

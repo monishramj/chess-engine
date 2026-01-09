@@ -38,13 +38,13 @@ class Board :
     def all_occ(self) :
         return Board.white_occ(self) | Board.black_occ(self)
         
-    def is_occ(self, tile) :
+    def is_occ(self, tile: int) :
         return ((1 << tile) & Board.all_occ(self)) != 0
     
-    def is_white(self, tile) :
+    def is_white(self, tile: int) :
         return ((1 << tile) & Board.white_occ(self)) != 0
     
-    def is_black(self, tile) :
+    def is_black(self, tile: int) :
         return ((1 << tile) & Board.black_occ(self)) != 0
     
     def same_occ(self) :
@@ -59,7 +59,7 @@ class Board :
         else:
             return Board.white_occ(self)
         
-    def opp_piece(self, piece) :
+    def opp_piece(self, piece: chr) :
         pieces = ['P', 'N', 'B', 'R', 'Q', 'K']
         if piece not in pieces:
             raise ValueError('Invalid piece')
@@ -69,7 +69,7 @@ class Board :
         else:
             return self.pieces['W' + piece]
     
-    def same_piece(self, piece) :
+    def same_piece(self, piece: chr) :
         pieces = ['P', 'N', 'B', 'R', 'Q', 'K']
         if piece not in pieces:
             raise ValueError('Invalid piece')
@@ -79,14 +79,14 @@ class Board :
         else:
             return self.pieces['B' + piece]
              
-    def piece_at(self, tile) :
+    def piece_at(self, tile: int) :
         mask = 1 << tile
         for name, bb in self.pieces.items():
             if bb & mask:
                 return name
         return None
     
-    def move(self, start, end) :
+    def move(self, start: int, end: int) : # TODO!!! MAKE THIS UNDO 
         if not self.is_occ(start):
             return None
         
@@ -173,7 +173,7 @@ class Board :
         return "\n".join(lines) + '\n'
     
     @staticmethod
-    def print_bb(bb) :
+    def print_bb(bb: int) :
         for r in range(7, -1, -1) :
             row = ' '.join('1' if bb & (1 << (r*8 + c)) else '0' for c in range(8))
             print(f"{r} | {row}")
