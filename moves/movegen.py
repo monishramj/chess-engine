@@ -1,0 +1,263 @@
+from board import Board as b
+import moves.move_tables as tb
+import moves.move as m
+
+#------------------------#
+#     SETUP & HELPERS    #
+#------------------------#
+
+# change to two functions b/c tuple usage slows it down
+def lssb(bb) : # returns only lssb
+    return bb & -bb if bb != 0 else 0
+
+def pop_lssb(bb) : # returns bb w/o lssb
+    return bb & (bb-1) if bb != 0 else 0 
+    
+def lssb_sq(lssb) : # lssb as least sig set bit, so lowest 1 in bb?
+    return lssb.bit_length() - 1
+
+def bb_to_encoded(bb, start, flag) :
+    encoded_moves = []
+
+    while bb:
+        least = lssb(bb)
+        end = lssb_sq(least)
+        bb = pop_lssb(bb)
+        encoded_moves.append(m.encode_move(start, end, flag))
+    
+    return encoded_moves
+    
+
+def reverse_bb(bb) : 
+    bb = ((bb & 0x5555555555555555) << 1) | ((bb >> 1) & 0x5555555555555555)
+    bb = ((bb & 0x3333333333333333) << 2) | ((bb >> 2) & 0x3333333333333333)
+    bb = ((bb & 0x0F0F0F0F0F0F0F0F) << 4) | ((bb >> 4) & 0x0F0F0F0F0F0F0F0F)
+    bb = ((bb & 0x00FF00FF00FF00FF) << 8) | ((bb >> 8) & 0x00FF00FF00FF00FF)
+    bb = ((bb & 0x0000FFFF0000FFFF) << 16) | ((bb >> 16) & 0x0000FFFF0000FFFF)
+    bb = (bb << 32) | (bb >> 32)
+
+    return tb.bitmask(bb)
+
+def not_bb(bb) :
+    return tb.bitmask(~bb)
+
+#--------------------------#
+#   SINGULAR PIECE MOVES   #
+#--------------------------#
+
+def knight_lookup(bb, same_occ) :
+    return tb.KNIGHT_MOVES[bb] & not_bb(same_occ)
+
+def king_lookup(bb, same_occ) :
+    return tb.KING_MOVES[bb] & not_bb(same_occ)
+
+def pawn_lookup(bb, color, all_occ, opp_occ, ep=0) :
+    moves = tb.PAWN_WHITE_MOVES[bb] if color > 0 else tb.PAWN_BLACK_MOVES[bb]
+    attacks = tb.PAWN_WHITE_ATTACKS[bb] if color > 0 else tb.PAWN_BLACK_ATTACKS[bb]
+    step = tb.north_one(bb) if color > 0 else tb.south_one(bb)
+
+    # PAWN_MOVES includes single + double push, so step checks if 
+    # moves masked after occupancy, if blocked by other piece
+    if step & all_occ: 
+        moves = 0
+    else:
+        moves &= not_bb(all_occ)
+
+    attacks &= opp_occ | ep
+
+    return moves | attacks
+
+def hq(bb, all_occ, mask) : # hyperbola quintessence
+    mask_occ = mask & all_occ
+    reverse = reverse_bb(bb) << 1
+
+    left = mask_occ - (bb << 1) # o ^ o-2r
+    right = reverse_bb(reverse_bb(mask_occ) - reverse)
+    moves = (left ^ right) & mask
+
+    return moves
+
+def rook_hq(bb, all_occ) :
+    sq = lssb_sq(bb)
+
+    r = tb.ROWS[sq // 8]
+    c = tb.COLUMNS[sq % 8]
+
+    return hq(bb, all_occ, r) | hq(bb, all_occ, c)
+
+def bishop_hq(bb, all_occ) :
+    diag = tb.DIAGONALS[bb]
+    anti_diag = tb.ANTI_DIAGONALS[bb]
+
+    return hq(bb, all_occ, diag) | hq(bb, all_occ, anti_diag)
+
+def queen_hq(bb, all_occ):
+    return rook_hq(bb, all_occ) | bishop_hq(bb, all_occ)
+
+#---------------------#
+#     PSEUDO MOVES    #
+#---------------------#
+
+def step_pseudo_moves(board: b, piece: str) :
+    if not (piece == 'N' or piece == 'K'):
+        raise ValueError('Wrong piece, only use N or K for step_pseudo_moves()')
+    
+    lookup = knight_lookup if piece == 'N' else king_lookup
+    
+    same_occ = board.same_occ()
+    opp_occ = board.opp_occ()
+    empty = not_bb(board.all_occ())
+
+    bb = board.same_piece(piece)
+
+    moves = []
+
+    while bb:
+        least = lssb(bb)
+        bb = pop_lssb(bb)
+        start = lssb_sq(least)
+        possible_moves = lookup(least, same_occ)
+
+        moves.extend(bb_to_encoded(possible_moves & opp_occ, start, m.CAPTURE))
+        moves.extend(bb_to_encoded(possible_moves & empty, start, m.QUIET))
+
+    return moves
+
+def sliding_pseudo_moves(board: b, piece: str) :
+    if not (piece == 'B' or piece == 'R' or piece == 'Q'):
+        raise ValueError('Wrong piece, only use B, R, or Q for sliding_pseudo_moves()')
+    
+    hq_func = hq
+
+    if piece == 'B':
+        hq_func = bishop_hq
+    elif piece == 'R':
+        hq_func = rook_hq
+    else:
+        hq_func = queen_hq
+    
+    all_occ = board.all_occ()
+    same_occ = board.same_occ()
+    opp_occ = board.opp_occ()
+    empty = not_bb(all_occ)
+
+    bb = board.same_piece(piece)
+
+    moves = []
+
+    while bb:
+        least = lssb(bb)
+        bb = pop_lssb(bb)
+        start = lssb_sq(least)
+        possible_moves = hq_func(least, all_occ) & not_bb(same_occ)
+
+        moves.extend(bb_to_encoded(possible_moves & opp_occ, start, m.CAPTURE))
+        moves.extend(bb_to_encoded(possible_moves & empty, start, m.QUIET))
+
+    return moves
+
+def pawn_pseudo_moves(board: b) :
+    def pawn_promo(start, end, captured):
+        if captured:
+            # Flags 10, 11, 12, 13
+            return [
+                m.encode_move(start, end, m.PROMOTE_Q_CAP),
+                m.encode_move(start, end, m.PROMOTE_R_CAP),
+                m.encode_move(start, end, m.PROMOTE_B_CAP),
+                m.encode_move(start, end, m.PROMOTE_N_CAP)
+            ]
+        else:
+            # Flags 6, 7, 8, 9
+            return [
+                m.encode_move(start, end, m.PROMOTE_Q),
+                m.encode_move(start, end, m.PROMOTE_R),
+                m.encode_move(start, end, m.PROMOTE_B),
+                m.encode_move(start, end, m.PROMOTE_N)
+            ]
+    
+    bb = board.same_piece('P')
+    color = board.color
+    opp_occ = board.opp_occ()
+    all_occ = board.all_occ()
+    ep = board.ep_sq
+
+    promo_rank = tb.ROWS[7] if color > 0 else tb.ROWS[0]
+    start_rank = tb.ROWS[1] if color > 0 else tb.ROWS[6]
+    double_push_rank = tb.ROWS[3] if color > 0 else tb.ROWS[4]
+
+    moves = []
+
+    while bb:
+        least = lssb(bb)
+        bb = pop_lssb(bb)
+        start = lssb_sq(least)
+        possible_moves = pawn_lookup(least, color, all_occ, opp_occ, ep)
+
+        # EP
+        if ep & (possible_moves & ep) :
+            moves.append(m.encode_move(start, lssb_sq(ep), m.EP))
+            possible_moves &= ~ep
+
+        # PROMOTION & PROMO CAPS
+        promos = possible_moves & promo_rank
+
+        while promos:
+            promo_bit = lssb(promos)
+            end = lssb_sq(promo_bit)           
+            is_cap = promo_bit & opp_occ            
+            moves.extend(pawn_promo(start, end, is_cap))
+            promos = pop_lssb(promos)
+        possible_moves &= ~promo_rank
+
+        double_push = possible_moves & double_push_rank
+        if double_push & (least & start_rank) :
+            moves.append(m.encode_move(start, lssb_sq(double_push), m.DOUBLE_PUSH))
+        possible_moves &= ~double_push
+
+        # CAPTURE
+        caps = possible_moves & opp_occ
+        if caps: 
+            moves.extend(bb_to_encoded(caps, start, m.CAPTURE))
+
+        # QUIET
+        quiets = possible_moves & ~opp_occ
+        if quiets: 
+            moves.extend(bb_to_encoded(quiets, start, m.QUIET))
+        
+
+    return moves
+
+#-----------------#
+#     LEGALITY    #
+#-----------------#
+
+def in_check(board: b) -> bool :
+    bb = board.same_piece('K')
+    all_occ = board.all_occ()
+    
+    if tb.KNIGHT_MOVES[bb] & board.opp_piece('N'):
+        return True
+    if tb.KING_MOVES[bb] & board.opp_piece('K'):
+        return True
+    
+    # switched for opponent attacks
+    king_pawn_attacks = tb.PAWN_BLACK_ATTACKS[bb] if board.color > 0 else tb.PAWN_WHITE_ATTACKS[bb] 
+    if king_pawn_attacks & board.opp_piece('P'):
+        return True
+    
+    if rook_hq(bb, all_occ) & (board.opp_piece('R') | board.opp_piece('Q')):
+        return True
+    if bishop_hq(bb, all_occ) & (board.opp_piece('B') | board.opp_piece('Q')):
+        return True
+    
+    
+    return False
+
+# incomplete
+def gen_legal_moves(board: b) :
+
+    pseudo_moves = step_pseudo_moves(board, 'N')
+    pseudo_moves.extend(step_pseudo_moves(board, 'K'))
+    pseudo_moves.extend(sliding_pseudo_moves(board, 'B', bishop_hq))
+    pseudo_moves.extend(sliding_pseudo_moves(board, 'R', rook_hq))
+    pseudo_moves.extend(sliding_pseudo_moves(board, 'Q', queen_hq))

@@ -1,6 +1,6 @@
 from board import Board
 import moves.move_tables as tb
-import moves.move as m
+import moves.movegen as m
 
 
 b = Board()

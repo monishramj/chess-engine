@@ -1,5 +1,5 @@
 from board import Piece, Board
-import moves.move as md
+import moves.movegen as md
 import numpy as np
 
 def evaluate(board):

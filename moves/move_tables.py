@@ -1,4 +1,3 @@
-from board import Board as b
 
 #------------------------#
 #     SETUP & HELPERS    #
