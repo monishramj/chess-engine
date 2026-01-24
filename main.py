@@ -1,14 +1,13 @@
 from board import Board
-import move as md
-
+import moves.move_tables as tb
+import moves.movegen as m
 
 
 b = Board()
-b.fen_to_board()
-print(b)
-print(md.available_moves(b, (3,4)))
+b.fen_to_board('8/q3np2/P1P4r/Pk2N1R1/3rPp2/8/3Q4/3K1b2 w - - 0 1')
 
-best, move = md.minimax(b, 3, -1)
-start, end = move
-print(md.move_piece(b, start, end))
+
+print(b)
+unused, bishop = m.pop_lssb(b.pieces['BQ'])
+Board.print_bb(m.queen_hq(bb= bishop, occ= b.all_occ()) & ~b.black_occ())
 
