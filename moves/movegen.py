@@ -7,16 +7,16 @@ import moves.move as m
 #------------------------#
 
 # change to two functions b/c tuple usage slows it down
-def lssb(bb) : # returns only lssb
+def lssb(bb) -> int : # returns only lssb
     return bb & -bb if bb != 0 else 0
 
-def pop_lssb(bb) : # returns bb w/o lssb
+def pop_lssb(bb) -> int : # returns bb w/o lssb
     return bb & (bb-1) if bb != 0 else 0 
     
-def lssb_sq(lssb) : # lssb as least sig set bit, so lowest 1 in bb?
+def lssb_sq(lssb) -> int : # lssb as least sig set bit, so lowest 1 in bb?
     return lssb.bit_length() - 1
 
-def bb_to_encoded(bb, start, flag) :
+def bb_to_encoded(bb, start, flag) -> list :
     encoded_moves = []
 
     while bb:
@@ -28,7 +28,7 @@ def bb_to_encoded(bb, start, flag) :
     return encoded_moves
     
 
-def reverse_bb(bb) : 
+def reverse_bb(bb) -> int : 
     bb = ((bb & 0x5555555555555555) << 1) | ((bb >> 1) & 0x5555555555555555)
     bb = ((bb & 0x3333333333333333) << 2) | ((bb >> 2) & 0x3333333333333333)
     bb = ((bb & 0x0F0F0F0F0F0F0F0F) << 4) | ((bb >> 4) & 0x0F0F0F0F0F0F0F0F)
@@ -38,20 +38,20 @@ def reverse_bb(bb) :
 
     return tb.bitmask(bb)
 
-def not_bb(bb) :
+def not_bb(bb) -> int :
     return tb.bitmask(~bb)
 
 #--------------------------#
 #   SINGULAR PIECE MOVES   #
 #--------------------------#
 
-def knight_lookup(bb, same_occ) :
+def knight_lookup(bb, same_occ) -> int :
     return tb.KNIGHT_MOVES[bb] & not_bb(same_occ)
 
-def king_lookup(bb, same_occ) :
+def king_lookup(bb, same_occ) -> int :
     return tb.KING_MOVES[bb] & not_bb(same_occ)
 
-def pawn_lookup(bb, color, all_occ, opp_occ, ep=0) :
+def pawn_lookup(bb, color, all_occ, opp_occ, ep=0) -> int :
     moves = tb.PAWN_WHITE_MOVES[bb] if color > 0 else tb.PAWN_BLACK_MOVES[bb]
     attacks = tb.PAWN_WHITE_ATTACKS[bb] if color > 0 else tb.PAWN_BLACK_ATTACKS[bb]
     step = tb.north_one(bb) if color > 0 else tb.south_one(bb)
@@ -67,7 +67,7 @@ def pawn_lookup(bb, color, all_occ, opp_occ, ep=0) :
 
     return moves | attacks
 
-def hq(bb, all_occ, mask) : # hyperbola quintessence
+def hq(bb, all_occ, mask) -> int : # hyperbola quintessence
     mask_occ = mask & all_occ
     reverse = reverse_bb(bb) << 1
 
@@ -77,7 +77,7 @@ def hq(bb, all_occ, mask) : # hyperbola quintessence
 
     return moves
 
-def rook_hq(bb, all_occ) :
+def rook_hq(bb, all_occ) -> int :
     sq = lssb_sq(bb)
 
     r = tb.ROWS[sq // 8]
@@ -85,13 +85,13 @@ def rook_hq(bb, all_occ) :
 
     return hq(bb, all_occ, r) | hq(bb, all_occ, c)
 
-def bishop_hq(bb, all_occ) :
+def bishop_hq(bb, all_occ) -> int :
     diag = tb.DIAGONALS[bb]
     anti_diag = tb.ANTI_DIAGONALS[bb]
 
     return hq(bb, all_occ, diag) | hq(bb, all_occ, anti_diag)
 
-def queen_hq(bb, all_occ):
+def queen_hq(bb, all_occ) -> int :
     return rook_hq(bb, all_occ) | bishop_hq(bb, all_occ)
 
 #---------------------#
@@ -127,8 +127,6 @@ def sliding_pseudo_moves(board: b, piece: str) :
     if not (piece == 'B' or piece == 'R' or piece == 'Q'):
         raise ValueError('Wrong piece, only use B, R, or Q for sliding_pseudo_moves()')
     
-    hq_func = hq
-
     if piece == 'B':
         hq_func = bishop_hq
     elif piece == 'R':
@@ -200,7 +198,6 @@ def pawn_pseudo_moves(board: b) :
 
         # PROMOTION & PROMO CAPS
         promos = possible_moves & promo_rank
-
         while promos:
             promo_bit = lssb(promos)
             end = lssb_sq(promo_bit)           
@@ -209,6 +206,7 @@ def pawn_pseudo_moves(board: b) :
             promos = pop_lssb(promos)
         possible_moves &= ~promo_rank
 
+        # DOUBLE PUSH
         double_push = possible_moves & double_push_rank
         if double_push & (least & start_rank) :
             moves.append(m.encode_move(start, lssb_sq(double_push), m.DOUBLE_PUSH))
@@ -227,12 +225,47 @@ def pawn_pseudo_moves(board: b) :
 
     return moves
 
+def castling_moves(board: b) :
+    if in_check(board):
+        return []
+
+    moves = []
+    all_occ = board.all_occ()
+
+    color_offset = 0 if board.color > 0 else 2
+
+    for i in range(color_offset, color_offset + 2):
+        strat = tb.CASTLE[i]
+    
+        if not (board.castle_rights & strat['bit']):
+            continue
+            
+        if all_occ & strat['empty']:
+            continue
+            
+        is_legal = True
+        for sq in strat['safe']:
+            if sq_in_attack(sq, board):
+                is_legal = False
+                break
+        
+        if is_legal:
+            moves.append(m.encode_move(strat['start'], strat['end'], strat['flag']))
+
+    return moves
+
 #-----------------#
 #     LEGALITY    #
 #-----------------#
 
-def in_check(board: b) -> bool :
-    bb = board.same_piece('K')
+def sq_in_attack(sq: int, board: b) -> bool :
+    '''
+    Docstring for sq_in_attack
+    
+    :param sq: Tile shifts from 0 (not board rep)
+    :type sq: int
+    '''
+    bb = 1 << sq
     all_occ = board.all_occ()
     
     if tb.KNIGHT_MOVES[bb] & board.opp_piece('N'):
@@ -250,14 +283,33 @@ def in_check(board: b) -> bool :
     if bishop_hq(bb, all_occ) & (board.opp_piece('B') | board.opp_piece('Q')):
         return True
     
-    
     return False
 
-# incomplete
-def gen_legal_moves(board: b) :
+def in_check(board: b) -> bool :
+    bb = board.same_piece('K') # this would be checked after a move is made, so turn would be opponent
+    all_occ = board.all_occ()
+    
+    return sq_in_attack(lssb_sq(bb), board)
 
-    pseudo_moves = step_pseudo_moves(board, 'N')
-    pseudo_moves.extend(step_pseudo_moves(board, 'K'))
-    pseudo_moves.extend(sliding_pseudo_moves(board, 'B', bishop_hq))
-    pseudo_moves.extend(sliding_pseudo_moves(board, 'R', rook_hq))
-    pseudo_moves.extend(sliding_pseudo_moves(board, 'Q', queen_hq))
+def gen_pseudo_moves(board: b) -> list[int] :
+    moves = step_pseudo_moves(board, 'N')
+    moves.extend(step_pseudo_moves(board, 'K'))
+    moves.extend(sliding_pseudo_moves(board, 'B'))
+    moves.extend(sliding_pseudo_moves(board, 'R'))
+    moves.extend(sliding_pseudo_moves(board, 'Q'))
+    moves.extend(pawn_pseudo_moves(board))
+    moves.extend(castling_moves(board))
+    return moves
+
+def gen_legal_moves(board: b, moves: list[int]) -> list[int] :
+    legal_moves = []
+    for move in moves :
+        board.make_move(move)
+
+        if not in_check(board) :
+            legal_moves.append(move)
+
+        board.undo_move(move)
+    
+    return legal_moves
+

@@ -10,6 +10,45 @@ def bitmask(num) :
 COLUMNS = [0x0101010101010101 << i for i in range(8)]
 ROWS = [0xFF << (i*8) for i in range(8)]
 
+CASTLE_UPDATER = [15] * 64
+CASTLE_UPDATER[7] = 14
+CASTLE_UPDATER[63] = 11 
+CASTLE_UPDATER[0] = 13
+CASTLE_UPDATER[56] = 7 
+CASTLE_UPDATER[4]  = 12 
+CASTLE_UPDATER[60] = 3
+
+CASTLE = [
+    # w_oo
+    {
+        'bit': 1,
+        'empty': 0x60,
+        'safe': [4, 5, 6],
+        'start': 4, 'end': 6, 'flag': 14
+    },
+    # w_ooo
+    {
+        'bit': 2, 
+        'empty': 0xE,
+        'safe': [4, 3, 2],
+        'start': 4, 'end': 2, 'flag': 15
+    },
+    # b_oo
+    {
+        'bit': 4, 
+        'empty': 0x6000000000000000,
+        'safe': [60, 61, 62],
+        'start': 60, 'end': 62, 'flag': 14
+    },
+    # b_ooo
+    {
+        'bit': 8, 
+        'empty': 0xE00000000000000,
+        'safe': [60, 59, 58],
+        'start': 60, 'end': 58, 'flag': 15
+    }
+]
+
 def east_one(bb) :
     return bitmask(bb << 1) & ~COLUMNS[0]
 def west_one(bb) :

@@ -1,3 +1,6 @@
+import move as m
+import move_tables as tb
+
 class Board :
     def __init__(self) :
         self.pieces = {
@@ -14,18 +17,13 @@ class Board :
             "BQ" : 0,
             "BK" : 0
         }
+
         self.color = 1
-        self.ep_sq = 0 # TODO!!! 
-        
-        # TODO: implement rest of fields
-        
-    # @staticmethod
-    # def sq(r, c) :
-    #     return r * 8 + c
-    
-    # @staticmethod
-    # def place(s) :
-    #     return 1 << s
+        self.ep_sq = 0
+
+        self.castle_rights = 15 #1111, w_oo, w_ooo, b_oo, b_ooo
+
+        self.history = [] # holds (castling, eq, captures if any, moving piece)
     
     def white_occ(self) :
         return (self.pieces["WP"] | self.pieces["WN"] | self.pieces["WB"] |
@@ -38,15 +36,6 @@ class Board :
     def all_occ(self) :
         return Board.white_occ(self) | Board.black_occ(self)
         
-    def is_occ(self, tile: int) :
-        return ((1 << tile) & Board.all_occ(self)) != 0
-    
-    def is_white(self, tile: int) :
-        return ((1 << tile) & Board.white_occ(self)) != 0
-    
-    def is_black(self, tile: int) :
-        return ((1 << tile) & Board.black_occ(self)) != 0
-    
     def same_occ(self) :
         if self.color > 0:
             return Board.white_occ(self)
@@ -86,28 +75,127 @@ class Board :
                 return name
         return None
     
-    def move(self, start: int, end: int) : # TODO!!! MAKE THIS UNDO 
-        if not self.is_occ(start):
-            return None
+    def _toggle_piece(self, name, sq_bit) :
+        self.pieces[name] ^= sq_bit
+
+    def _get_promo_piece(self, flag) :
+        color_char = 'W' if self.color > 0 else 'B'
+        if flag in (m.PROMOTE_Q, m.PROMOTE_Q_CAP): return color_char + 'Q'
+        if flag in (m.PROMOTE_R, m.PROMOTE_R_CAP): return color_char + 'R'
+        if flag in (m.PROMOTE_B, m.PROMOTE_B_CAP): return color_char + 'B'
+        if flag in (m.PROMOTE_N, m.PROMOTE_N_CAP): return color_char + 'N'
+
+    def make_move(self, move) :
+        start = m.get_start(move)
+        end = m.get_end(move)
+        flag = m.get_flag(move)
         
-        start_tile = 1 << start
-        end_tile = 1 << end
-
-        piece = self.piece_at(start) 
-        if piece:
-            output = self.copy()
-            output.pieces[piece] = (output.pieces[piece] ^ start_tile) | end_tile
-            output.color *= -1
-
-            #! remove existing piece there, don't forget to check for checks and same piece later  :Sob :
-            for other, o_bb in output.pieces.items():
-                if end_tile & o_bb and other != piece:
-                    output.pieces[other] ^= end_tile
-
-            return output
+        start_bit = 1 << start
+        end_bit = 1 << end
+        
+        moving_piece = self.piece_at(start)
+        captured_piece = self.piece_at(end)
+        
+        self.history.append((self.castle_rights, self.ep_sq, captured_piece, moving_piece))
+        
+        if captured_piece and flag != m.EP:
+            self._toggle_piece(captured_piece, end_bit)
             
-        raise ValueError(f'Invalid move.')
+        if flag == m.QUIET or flag == m.CAPTURE:
+            self._toggle_piece(moving_piece, start_bit)
+            self._toggle_piece(moving_piece, end_bit)
+            self.ep_sq = 0
+            
+        elif flag == m.DOUBLE_PUSH:
+            self._toggle_piece(moving_piece, start_bit)
+            self._toggle_piece(moving_piece, end_bit)
 
+            # Set EP square to the square BEHIND the pawn
+            self.ep_sq = 1 << (start + 8 if self.color > 0 else start - 8)
+            
+        elif flag in (m.OO, m.OOO):
+            self._toggle_piece(moving_piece, start_bit)
+            self._toggle_piece(moving_piece, end_bit)
+
+            if flag == m.OO:
+                r_start, r_end = (7, 5) if self.color > 0 else (63, 61)
+            else:
+                r_start, r_end = (0, 3) if self.color > 0 else (56, 59)
+
+            r_name = "WR" if self.color > 0 else "BR"
+            self._toggle_piece(r_name, 1 << r_start)
+            self._toggle_piece(r_name, 1 << r_end)
+            self.ep_sq = 0
+
+        elif flag == m.EP:
+            self._toggle_piece(moving_piece, start_bit)
+            self._toggle_piece(moving_piece, end_bit)
+
+            ep_cap = end - 8 if self.color > 0 else end + 8
+            captured_pawn = "BP" if self.color > 0 else "WP"
+            self._toggle_piece(captured_pawn, 1 << ep_cap)
+            self.ep_sq = 0
+        
+        elif flag >= 6 and flag <= 13: # promotions
+            self._toggle_piece(moving_piece, start_bit)
+            promo_piece = self._get_promo_piece(flag)
+            self._toggle_piece(promo_piece, end_bit)
+            self.ep_sq = 0
+
+        self.castle_rights &= tb.CASTLE_UPDATER[start]
+        self.castle_rights &= tb.CASTLE_UPDATER[end]
+        
+        self.color *= -1
+
+    def undo_move(self, move) :
+        old_rights, old_ep, captured_piece, moving_piece = self.history.pop()
+        self.color *= -1
+
+        start = m.get_start(move)
+        end = m.get_end(move)
+        flag = m.get_flag(move)
+        
+        start_bit = 1 << start
+        end_bit = 1 << end
+
+        if flag in (m.OO, m.OOO):
+            self._toggle_piece(moving_piece, start_bit)
+            self._toggle_piece(moving_piece, end_bit)
+
+            if flag == m.OO:
+                r_start, r_end = (7, 5) if self.color > 0 else (63, 61)
+            else:
+                r_start, r_end = (0, 3) if self.color > 0 else (56, 59)
+
+            r_name = "WR" if self.color > 0 else "BR"
+            self._toggle_piece(r_name, 1 << r_start)
+            self._toggle_piece(r_name, 1 << r_end)
+
+        elif flag == m.EP:
+            self._toggle_piece(moving_piece, start_bit)
+            self._toggle_piece(moving_piece, end_bit)
+
+            ep_cap_sq = end - 8 if self.color > 0 else end + 8
+            victim_pawn = "BP" if self.color > 0 else "WP"
+            self._toggle_piece(victim_pawn, 1 << ep_cap_sq)
+
+        elif flag >= 6 and flag <= 13: # promotions
+            self._toggle_piece(moving_piece, end_bit)
+
+            pawn_name = "WP" if self.color > 0 else "BP"
+            self._toggle_piece(pawn_name, start_bit)
+
+            if captured_piece:
+                self._toggle_piece(captured_piece, end_bit)
+
+        else: # QUIET, CAPTURE, DOUBLE_PUSH
+            self._toggle_piece(moving_piece, start_bit)
+            self._toggle_piece(moving_piece, end_bit)
+            if captured_piece:
+                self._toggle_piece(captured_piece, end_bit)
+
+        self.castle_rights = old_rights
+        self.ep_sq = old_ep
 
     #? https ://www.chess.com/analysis
     def fen_to_board(self, fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') :

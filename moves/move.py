@@ -20,12 +20,21 @@ PROMOTE_N_CAP = 11
 PROMOTE_R_CAP = 12
 PROMOTE_Q_CAP = 13
 
-
 #----------------#
 #     METHODS    #
 #----------------#
 
 def encode_move(start: int, end: int, flag: int):
+    '''
+    Docstring for encode_move
+    
+    :param start: Tile shifts from 0
+    :type start: int
+    :param end: Tile shifts from 0
+    :type end: int
+    :param flag: Type of move
+    :type flag: int
+    '''
     moves = flag << 12 | end << 6 | start
 
     return moves
