@@ -51,21 +51,19 @@ def knight_lookup(bb, same_occ) -> int :
 def king_lookup(bb, same_occ) -> int :
     return tb.KING_MOVES[bb] & not_bb(same_occ)
 
-def pawn_lookup(bb, color, all_occ, opp_occ, ep=0) -> int :
-    moves = tb.PAWN_WHITE_MOVES[bb] if color > 0 else tb.PAWN_BLACK_MOVES[bb]
+def pawn_lookup(bb, color, all_occ, opp_occ, ep_sq=0) -> int :
+    start_rank = tb.ROWS[1] if color > 0 else tb.ROWS[6]
+    move = tb.north_one if color > 0 else tb.south_one
+
+    step = move(bb) & not_bb(all_occ)
+    double = move(step) & not_bb(all_occ) if step and (start_rank & bb) else 0
+
     attacks = tb.PAWN_WHITE_ATTACKS[bb] if color > 0 else tb.PAWN_BLACK_ATTACKS[bb]
-    step = tb.north_one(bb) if color > 0 else tb.south_one(bb)
 
-    # PAWN_MOVES includes single + double push, so step checks if 
-    # moves masked after occupancy, if blocked by other piece
-    if step & all_occ: 
-        moves = 0
-    else:
-        moves &= not_bb(all_occ)
-
-    attacks &= opp_occ | ep
-
-    return moves | attacks
+    captures = attacks & opp_occ
+    ep = attacks & ep_sq
+    
+    return step, double, captures, ep
 
 def hq(bb, all_occ, mask) -> int : # hyperbola quintessence
     mask_occ = mask & all_occ
@@ -177,7 +175,7 @@ def pawn_pseudo_moves(board: b) :
     color = board.color
     opp_occ = board.opp_occ()
     all_occ = board.all_occ()
-    ep = board.ep_sq
+    ep_sq = board.ep_sq
 
     promo_rank = tb.ROWS[7] if color > 0 else tb.ROWS[0]
     start_rank = tb.ROWS[1] if color > 0 else tb.ROWS[6]
@@ -189,40 +187,37 @@ def pawn_pseudo_moves(board: b) :
         least = lssb(bb)
         bb = pop_lssb(bb)
         start = lssb_sq(least)
-        possible_moves = pawn_lookup(least, color, all_occ, opp_occ, ep)
+        step, double, caps, ep = pawn_lookup(least, color, all_occ, opp_occ, ep_sq)
 
         # EP
-        if ep & (possible_moves & ep) :
+        if ep :
             moves.append(m.encode_move(start, lssb_sq(ep), m.EP))
-            possible_moves &= ~ep
 
-        # PROMOTION & PROMO CAPS
-        promos = possible_moves & promo_rank
-        while promos:
-            promo_bit = lssb(promos)
-            end = lssb_sq(promo_bit)           
-            is_cap = promo_bit & opp_occ            
-            moves.extend(pawn_promo(start, end, is_cap))
-            promos = pop_lssb(promos)
-        possible_moves &= ~promo_rank
+        # CAPTURES
+        promo_caps = caps & promo_rank
+        reg_caps = caps & ~promo_rank
+        
+        while promo_caps:
+            target = lssb_sq(lssb(promo_caps))
+            moves.extend(pawn_promo(start, target, True))
+            promo_caps = pop_lssb(promo_caps)
+
+        moves.extend(bb_to_encoded(reg_caps, start, m.CAPTURE))
+
+        # PUSHES
+        promo_push = step & promo_rank
+        reg_push = step & ~promo_rank
+        
+        while promo_push:
+            target = lssb_sq(lssb(promo_push))
+            moves.extend(pawn_promo(start, target, False))
+            promo_push = pop_lssb(promo_push)
+        moves.extend(bb_to_encoded(reg_push, start, m.QUIET))
 
         # DOUBLE PUSH
-        double_push = possible_moves & double_push_rank
-        if double_push & (least & start_rank) :
-            moves.append(m.encode_move(start, lssb_sq(double_push), m.DOUBLE_PUSH))
-        possible_moves &= ~double_push
-
-        # CAPTURE
-        caps = possible_moves & opp_occ
-        if caps: 
-            moves.extend(bb_to_encoded(caps, start, m.CAPTURE))
-
-        # QUIET
-        quiets = possible_moves & ~opp_occ
-        if quiets: 
-            moves.extend(bb_to_encoded(quiets, start, m.QUIET))
+        if double:
+            moves.append(m.encode_move(start, lssb_sq(double), m.DOUBLE_PUSH))
         
-
     return moves
 
 def castling_moves(board: b) :
