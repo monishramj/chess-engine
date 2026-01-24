@@ -1,3 +1,10 @@
+
+# ! OUTDATED !
+# ! OUTDATED !
+# ! OUTDATED !
+# ! OUTDATED !
+
+
 from board import Piece, Board
 import moves.movegen as md
 import numpy as np
