@@ -24,28 +24,28 @@ CASTLE = [
         'bit': 1,
         'empty': 0x60,
         'safe': [4, 5, 6],
-        'start': 4, 'end': 6, 'flag': 14
+        'start': 4, 'end': 6, 'flag': 2
     },
     # w_ooo
     {
         'bit': 2, 
         'empty': 0xE,
         'safe': [4, 3, 2],
-        'start': 4, 'end': 2, 'flag': 15
+        'start': 4, 'end': 2, 'flag': 3
     },
     # b_oo
     {
         'bit': 4, 
         'empty': 0x6000000000000000,
         'safe': [60, 61, 62],
-        'start': 60, 'end': 62, 'flag': 14
+        'start': 60, 'end': 62, 'flag': 2
     },
     # b_ooo
     {
         'bit': 8, 
         'empty': 0xE00000000000000,
         'safe': [60, 59, 58],
-        'start': 60, 'end': 58, 'flag': 15
+        'start': 60, 'end': 58, 'flag': 3
     }
 ]
 

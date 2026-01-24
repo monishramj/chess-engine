@@ -1,5 +1,5 @@
-import move as m
-import move_tables as tb
+import moves.move as m
+import moves.move_tables as tb
 
 class Board :
     def __init__(self) :
@@ -95,6 +95,8 @@ class Board :
         
         moving_piece = self.piece_at(start)
         captured_piece = self.piece_at(end)
+
+        # print(start, ',', end, ',', flag, ',', moving_piece, ',', captured_piece)
         
         self.history.append((self.castle_rights, self.ep_sq, captured_piece, moving_piece))
         
@@ -148,17 +150,20 @@ class Board :
         self.color *= -1
 
     def undo_move(self, move) :
+        # print('undoing move')
         old_rights, old_ep, captured_piece, moving_piece = self.history.pop()
         self.color *= -1
 
         start = m.get_start(move)
         end = m.get_end(move)
         flag = m.get_flag(move)
+        # print('undoing flag', flag)
         
         start_bit = 1 << start
         end_bit = 1 << end
 
         if flag in (m.OO, m.OOO):
+            # print(moving_piece)
             self._toggle_piece(moving_piece, start_bit)
             self._toggle_piece(moving_piece, end_bit)
 
@@ -180,7 +185,8 @@ class Board :
             self._toggle_piece(victim_pawn, 1 << ep_cap_sq)
 
         elif flag >= 6 and flag <= 13: # promotions
-            self._toggle_piece(moving_piece, end_bit)
+            promo_piece = self._get_promo_piece(flag)
+            self._toggle_piece(promo_piece, end_bit)
 
             pawn_name = "WP" if self.color > 0 else "BP"
             self._toggle_piece(pawn_name, start_bit)
@@ -231,6 +237,20 @@ class Board :
             
 
             self.color = 1 if fields[1] == 'w' else -1 
+
+            self.castle_rights = 0
+            if fields[2] != '-':
+                if 'K' in fields[2]: self.castle_rights |= 1
+                if 'Q' in fields[2]: self.castle_rights |= 2
+                if 'k' in fields[2]: self.castle_rights |= 4
+                if 'q' in fields[2]: self.castle_rights |= 8
+
+            if fields[3] != '-':
+                col = ord(fields[3][0]) - ord('a')
+                row = int(fields[3][1]) - 1
+                self.ep_sq = 1 << (row * 8 + col)
+            else:
+                self.ep_sq = 0
             
  
         except Exception as e :

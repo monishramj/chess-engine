@@ -178,8 +178,6 @@ def pawn_pseudo_moves(board: b) :
     ep_sq = board.ep_sq
 
     promo_rank = tb.ROWS[7] if color > 0 else tb.ROWS[0]
-    start_rank = tb.ROWS[1] if color > 0 else tb.ROWS[6]
-    double_push_rank = tb.ROWS[3] if color > 0 else tb.ROWS[4]
 
     moves = []
 
@@ -240,7 +238,7 @@ def castling_moves(board: b) :
             
         is_legal = True
         for sq in strat['safe']:
-            if sq_in_attack(sq, board):
+            if sq_in_attack(sq, board, -board.color):
                 is_legal = False
                 break
         
@@ -253,7 +251,7 @@ def castling_moves(board: b) :
 #     LEGALITY    #
 #-----------------#
 
-def sq_in_attack(sq: int, board: b) -> bool :
+def sq_in_attack(sq: int, board: b, atk_color: int) -> bool :
     '''
     Docstring for sq_in_attack
     
@@ -263,28 +261,28 @@ def sq_in_attack(sq: int, board: b) -> bool :
     bb = 1 << sq
     all_occ = board.all_occ()
     
-    if tb.KNIGHT_MOVES[bb] & board.opp_piece('N'):
+    pref = 'W' if atk_color > 0 else 'B'
+    p = board.pieces
+    
+    if tb.KNIGHT_MOVES[bb] & p[pref + 'N']:
         return True
-    if tb.KING_MOVES[bb] & board.opp_piece('K'):
+    if tb.KING_MOVES[bb] & p[pref + 'K']:
         return True
     
     # switched for opponent attacks
-    king_pawn_attacks = tb.PAWN_BLACK_ATTACKS[bb] if board.color > 0 else tb.PAWN_WHITE_ATTACKS[bb] 
-    if king_pawn_attacks & board.opp_piece('P'):
+    pawn_attacks = tb.PAWN_BLACK_ATTACKS[bb] if atk_color > 0 else tb.PAWN_WHITE_ATTACKS[bb]
+    if pawn_attacks & p[pref + 'P']:
         return True
     
-    if rook_hq(bb, all_occ) & (board.opp_piece('R') | board.opp_piece('Q')):
+    if rook_hq(bb, all_occ) & (p[pref + 'R'] | p[pref + 'Q']):
         return True
-    if bishop_hq(bb, all_occ) & (board.opp_piece('B') | board.opp_piece('Q')):
+    if bishop_hq(bb, all_occ) & (p[pref + 'B'] | p[pref + 'Q']):
         return True
     
     return False
 
 def in_check(board: b) -> bool :
-    bb = board.same_piece('K') # this would be checked after a move is made, so turn would be opponent
-    all_occ = board.all_occ()
-    
-    return sq_in_attack(lssb_sq(bb), board)
+    return sq_in_attack(lssb_sq(board.same_piece('K')), board, -board.color)
 
 def gen_pseudo_moves(board: b) -> list[int] :
     moves = step_pseudo_moves(board, 'N')
@@ -296,14 +294,22 @@ def gen_pseudo_moves(board: b) -> list[int] :
     moves.extend(castling_moves(board))
     return moves
 
-def gen_legal_moves(board: b, moves: list[int]) -> list[int] :
+def gen_legal_moves(board: b) -> list[int] :
+    moves = gen_pseudo_moves(board)
+    # print('generated psuedo moves:', moves)
     legal_moves = []
-    for move in moves :
+
+    for move in moves:
         board.make_move(move)
-
-        if not in_check(board) :
+        
+        king_sq = lssb_sq(board.opp_piece('K'))
+        # b.print_bb(king_sq)
+        sq_attacked = sq_in_attack(king_sq, board, board.color)
+        # print(sq_attacked)
+        if not sq_attacked:
+            # print(move)
             legal_moves.append(move)
-
+       
         board.undo_move(move)
     
     return legal_moves
