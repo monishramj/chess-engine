@@ -17,6 +17,7 @@ class Board :
             "BQ" : 0,
             "BK" : 0
         }
+        self.mailbox = [None] * 64 # keep track of pieces, so we don't have to do piece_at loop which saves so much
 
         self.color = 1
         self.ep_sq = 0
@@ -68,15 +69,22 @@ class Board :
         else:
             return self.pieces['B' + piece]
              
-    def piece_at(self, tile: int) :
-        mask = 1 << tile
-        for name, bb in self.pieces.items():
-            if bb & mask:
-                return name
-        return None
+    # def piece_at(self, tile: int) :
+    #     mask = 1 << tile
+    #     for name, bb in self.pieces.items():
+    #         if bb & mask:
+    #             return name
+    #     return None
     
     def _toggle_piece(self, name, sq_bit) :
         self.pieces[name] ^= sq_bit
+
+        sq_idx = sq_bit.bit_length() - 1 # do i rlly want to import movegen for one function :sob:
+
+        if self.pieces[name] & sq_bit:
+            self.mailbox[sq_idx] = name
+        else:
+            self.mailbox[sq_idx] = None
 
     def _get_promo_piece(self, flag) :
         color_char = 'W' if self.color > 0 else 'B'
@@ -93,8 +101,8 @@ class Board :
         start_bit = 1 << start
         end_bit = 1 << end
         
-        moving_piece = self.piece_at(start)
-        captured_piece = self.piece_at(end)
+        moving_piece = self.mailbox[start]
+        captured_piece = self.mailbox[end]
 
         # print(start, ',', end, ',', flag, ',', moving_piece, ',', captured_piece)
         
@@ -210,6 +218,7 @@ class Board :
 
             'p' : "BP", 'n' : "BN", 'b' : "BB", 'r' : "BR", 'q' : "BQ", 'k' : "BK",
         }
+        self.mailbox = [None] * 64
 
         for key in self.pieces :
             self.pieces[key] = 0
@@ -231,7 +240,9 @@ class Board :
                         mask = 1 << i
                         if c not in fen_pieces :
                             raise ValueError(f"Invalid FEN, invalid char : {c}")
-                        self.pieces[fen_pieces[c]] |= mask
+                        piece_name = fen_pieces[c]
+                        self.pieces[piece_name] |= mask
+                        self.mailbox[i] = piece_name
                         i += 1
                 i -= 16
             
