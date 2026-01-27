@@ -65,47 +65,53 @@ def pawn_lookup(bb, color, all_occ, opp_occ, ep_sq=0) -> int :
     
     return step, double, captures, ep
 
-def hq(bb, all_occ, mask) -> int : # hyperbola quintessence
-    mask_occ = mask & all_occ
-    reverse = reverse_bb(bb) << 1
+def ray_attacks(sq, occ, dir) -> int :
+    ray = tb.RAYS[sq][dir]
+    blockers = ray & occ
+    if not blockers:
+        return ray
 
-    left = mask_occ - (bb << 1) # o ^ o-2r
-    right = reverse_bb(reverse_bb(mask_occ) - reverse)
-    moves = (left ^ right) & mask
+    if dir in (tb.N, tb.E, tb.NE, tb.NW):
+        stop = lssb(blockers)
+    else:
+        stop = blockers.bit_length() - 1
+        stop = 1 << stop
 
-    return moves
+    return ray ^ tb.RAYS[lssb_sq(stop)][dir]
 
-def rook_hq(bb, all_occ) -> int :
+def rook_attacks(bb: int, occ: int) -> int:
     sq = lssb_sq(bb)
+    return (
+        ray_attacks(sq, occ, tb.N) |
+        ray_attacks(sq, occ, tb.S) |
+        ray_attacks(sq, occ, tb.E) |
+        ray_attacks(sq, occ, tb.W)
+    )
 
-    r = tb.ROWS[sq // 8]
-    c = tb.COLUMNS[sq % 8]
+def bishop_attacks(bb: int, occ: int) -> int:
+    sq = lssb_sq(bb)
+    return (
+        ray_attacks(sq, occ, tb.NE) |
+        ray_attacks(sq, occ, tb.NW) |
+        ray_attacks(sq, occ, tb.SE) |
+        ray_attacks(sq, occ, tb.SW)
+    )
 
-    return hq(bb, all_occ, r) | hq(bb, all_occ, c)
-
-def bishop_hq(bb, all_occ) -> int :
-    diag = tb.DIAGONALS[bb]
-    anti_diag = tb.ANTI_DIAGONALS[bb]
-
-    return hq(bb, all_occ, diag) | hq(bb, all_occ, anti_diag)
-
-def queen_hq(bb, all_occ) -> int :
-    return rook_hq(bb, all_occ) | bishop_hq(bb, all_occ)
+def queen_attacks(bb: int, occ: int) -> int:
+    return rook_attacks(bb, occ) | bishop_attacks(bb, occ)
 
 #---------------------#
 #     PSEUDO MOVES    #
 #---------------------#
 
-def step_pseudo_moves(board: b, piece: str) :
-    if not (piece == 'N' or piece == 'K'):
-        raise ValueError('Wrong piece, only use N or K for step_pseudo_moves()')
+def step_pseudo_moves(board: b, piece: str, same_occ, opp_occ, empty) :
+    if piece == 'N':
+        lookup = knight_lookup
+    elif piece == 'K':
+        lookup = king_lookup
+    else:
+        raise ValueError('Wrong piece, only use N or K')
     
-    lookup = knight_lookup if piece == 'N' else king_lookup
-    
-    same_occ = board.same_occ()
-    opp_occ = board.opp_occ()
-    empty = not_bb(board.all_occ())
-
     bb = board.same_piece(piece)
 
     moves = []
@@ -121,21 +127,15 @@ def step_pseudo_moves(board: b, piece: str) :
 
     return moves
 
-def sliding_pseudo_moves(board: b, piece: str) :
-    if not (piece == 'B' or piece == 'R' or piece == 'Q'):
-        raise ValueError('Wrong piece, only use B, R, or Q for sliding_pseudo_moves()')
-    
+def sliding_pseudo_moves(board: b, piece: str, all_occ, same_occ, opp_occ, empty) :
     if piece == 'B':
-        hq_func = bishop_hq
+        ray = bishop_attacks
     elif piece == 'R':
-        hq_func = rook_hq
+        ray = rook_attacks
+    elif piece == 'Q':
+        ray = queen_attacks
     else:
-        hq_func = queen_hq
-    
-    all_occ = board.all_occ()
-    same_occ = board.same_occ()
-    opp_occ = board.opp_occ()
-    empty = not_bb(all_occ)
+        raise ValueError("Wrong piece, only use B, R, or Q")
 
     bb = board.same_piece(piece)
 
@@ -145,7 +145,7 @@ def sliding_pseudo_moves(board: b, piece: str) :
         least = lssb(bb)
         bb = pop_lssb(bb)
         start = lssb_sq(least)
-        possible_moves = hq_func(least, all_occ) & not_bb(same_occ)
+        possible_moves = ray(least, all_occ) & not_bb(same_occ)
 
         moves.extend(bb_to_encoded(possible_moves & opp_occ, start, m.CAPTURE))
         moves.extend(bb_to_encoded(possible_moves & empty, start, m.QUIET))
@@ -218,12 +218,11 @@ def pawn_pseudo_moves(board: b) :
         
     return moves
 
-def castling_moves(board: b) :
+def castling_moves(board: b, all_occ) :
     if in_check(board):
         return []
 
     moves = []
-    all_occ = board.all_occ()
 
     color_offset = 0 if board.color > 0 else 2
 
@@ -274,9 +273,9 @@ def sq_in_attack(sq: int, board: b, atk_color: int) -> bool :
     if pawn_attacks & p[pref + 'P']:
         return True
     
-    if rook_hq(bb, all_occ) & (p[pref + 'R'] | p[pref + 'Q']):
+    if rook_attacks(bb, all_occ) & (p[pref + 'R'] | p[pref + 'Q']):
         return True
-    if bishop_hq(bb, all_occ) & (p[pref + 'B'] | p[pref + 'Q']):
+    if bishop_attacks(bb, all_occ) & (p[pref + 'B'] | p[pref + 'Q']):
         return True
     
     return False
@@ -285,13 +284,19 @@ def in_check(board: b) -> bool :
     return sq_in_attack(lssb_sq(board.same_piece('K')), board, -board.color)
 
 def gen_pseudo_moves(board: b) -> list[int] :
-    moves = step_pseudo_moves(board, 'N')
-    moves.extend(step_pseudo_moves(board, 'K'))
-    moves.extend(sliding_pseudo_moves(board, 'B'))
-    moves.extend(sliding_pseudo_moves(board, 'R'))
-    moves.extend(sliding_pseudo_moves(board, 'Q'))
+
+    all_occ = board.all_occ()
+    same_occ = board.same_occ()
+    opp_occ = board.opp_occ()
+    empty = not_bb(all_occ)
+
+    moves = step_pseudo_moves(board, 'N', same_occ, opp_occ, empty)
+    moves.extend(step_pseudo_moves(board, 'K', same_occ, opp_occ, empty))
+    moves.extend(sliding_pseudo_moves(board, 'B', all_occ, same_occ, opp_occ, empty))
+    moves.extend(sliding_pseudo_moves(board, 'R', all_occ, same_occ, opp_occ, empty))
+    moves.extend(sliding_pseudo_moves(board, 'Q', all_occ, same_occ, opp_occ, empty))
     moves.extend(pawn_pseudo_moves(board))
-    moves.extend(castling_moves(board))
+    moves.extend(castling_moves(board, all_occ))
     return moves
 
 def gen_legal_moves(board: b) -> list[int] :

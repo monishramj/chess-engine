@@ -1,13 +1,14 @@
 from board import Board as b
 import moves.movegen as mg
 
+import time
+
 def perft(board, depth) :
-    if depth == 0:
-        return 1
+    legal_moves = mg.gen_legal_moves(board)
+    if depth == 1:
+        return len(legal_moves)
     
     nodes = 0
-    legal_moves = mg.gen_legal_moves(board)
-    
     for move in legal_moves:
         board.make_move(move)
         nodes += perft(board, depth - 1)
@@ -21,12 +22,22 @@ def perft_test(depth, fen):
         board.fen_to_board(fen)
     else:
         board.fen_to_board()
+    
+    print(f"\ntesting FEN: {fen if fen else 'starting position'}")
     print(board)
 
     for i in range(1, depth+1) :
-        print(perft(board, i))
+        start_time = time.time()
 
-perft_test(3, 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -')
+        nodes = perft(board, i)
+
+        end_time = time.time()
+        duration = end_time - start_time
+
+        nps = int(nodes / duration) if duration > 0 else 0
+        print(f"depth {i}: {nodes} nodes | time: {duration:.3f}s | NPS: {nps:,}")
+
+perft_test(4, 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -')
 perft_test(4, '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1')
 perft_test(4, 'r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1')
 perft_test(4, 'rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8')
