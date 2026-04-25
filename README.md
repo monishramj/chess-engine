@@ -1,31 +1,27 @@
 # chess-engine
-A basic Python chess engine implementing a basic minimax algorithm with alpha-beta pruning for move evaluation and selection.
-
-# Implementation
-- Basic board
-- Movement logic
-- Minimax algorithm 
-
-## TODO:
-- Checks, checkmates, stalemates
-- Special rules (promotion, en passant, castling)
-- Positional evaluation
-- GUI
-
-# How to Run
-The repository is in progress. To see it at work, try this sample code!!
-```
-from board import Board
-import move as md
-
-# initialize board
-b = Board()
-b.fen_to_board() # sets the board to a FEN position, you may input any string
-
-# get legal moves for a piece
-moves = md.available_moves(b, (6, 4))  # e2 pawn
-
-# Find best move
-score, (start, end) = md.minimax(b, depth=3, color=1)
-new_board = md.move_piece(b, start, end)
+ 
+A bitboard-based chess engine written in Python, with a planned rewrite in C.
+ 
+- **Bitboard representation** — 64-bit integers for compact board state
+- **Move generation** — ray attacks for sliding pieces, precomputed lookup tables for knights and kings, full pawn logic (double pushes, en passant, promotions)
+- **Move encoding** — compact 16-bit move format with flag bits for move type
+- **Legality checking** — full check detection and pseudo-legal move filtering
+- **FEN parsing** — load any board position via FEN string
+- **Perft testing** — correctness validation across standard test positions
+ 
+## Roadmap
+ 
+- [x] Bitboard infrastructure & mailbox
+- [x] Pseudo-legal & legal move generation
+- [x] Perft testing validation
+- [ ] Positional evaluation (PST, mobility, etc.)
+- [ ] Search improvements (transposition tables, iterative deepening)
+- [ ] UCI protocol support / GUI implementation
+ 
+## How to Run
+ 
+Run the perft tests to verify move generation:
+ 
+```bash
+python3 moves/perft_test.py
 ```
