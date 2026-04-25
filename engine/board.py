@@ -1,5 +1,5 @@
-import moves.move as m
-import moves.move_tables as tb
+from .moves import move as m
+from .moves import move_tables as tb
 
 class Board :
     def __init__(self) :
@@ -25,7 +25,7 @@ class Board :
         self.castle_rights = 15 #1111, w_oo, w_ooo, b_oo, b_ooo
 
         self.history = [] # holds (castling, eq, captures if any, moving piece)
-    
+
     def white_occ(self) :
         return (self.pieces["WP"] | self.pieces["WN"] | self.pieces["WB"] |
                 self.pieces["WR"] | self.pieces["WQ"] | self.pieces["WK"])
@@ -36,46 +36,46 @@ class Board :
 
     def all_occ(self) :
         return Board.white_occ(self) | Board.black_occ(self)
-        
+
     def same_occ(self) :
         if self.color > 0:
             return Board.white_occ(self)
         else:
             return Board.black_occ(self)
-        
+
     def opp_occ(self) :
         if self.color > 0:
             return Board.black_occ(self)
         else:
             return Board.white_occ(self)
-        
+
     def opp_piece(self, piece: chr) :
         pieces = ['P', 'N', 'B', 'R', 'Q', 'K']
         if piece not in pieces:
             raise ValueError('Invalid piece')
-        
+
         if self.color > 0:
             return self.pieces['B' + piece]
         else:
             return self.pieces['W' + piece]
-    
+
     def same_piece(self, piece: chr) :
         pieces = ['P', 'N', 'B', 'R', 'Q', 'K']
         if piece not in pieces:
             raise ValueError('Invalid piece')
-        
+
         if self.color > 0:
             return self.pieces['W' + piece]
         else:
             return self.pieces['B' + piece]
-             
+
     # def piece_at(self, tile: int) :
     #     mask = 1 << tile
     #     for name, bb in self.pieces.items():
     #         if bb & mask:
     #             return name
     #     return None
-    
+
     def _toggle_piece(self, name, sq_bit) :
         self.pieces[name] ^= sq_bit
 
@@ -97,32 +97,32 @@ class Board :
         start = m.get_start(move)
         end = m.get_end(move)
         flag = m.get_flag(move)
-        
+
         start_bit = 1 << start
         end_bit = 1 << end
-        
+
         moving_piece = self.mailbox[start]
         captured_piece = self.mailbox[end]
 
         # print(start, ',', end, ',', flag, ',', moving_piece, ',', captured_piece)
-        
+
         self.history.append((self.castle_rights, self.ep_sq, captured_piece, moving_piece))
-        
+
         if captured_piece and flag != m.EP:
             self._toggle_piece(captured_piece, end_bit)
-            
+
         if flag == m.QUIET or flag == m.CAPTURE:
             self._toggle_piece(moving_piece, start_bit)
             self._toggle_piece(moving_piece, end_bit)
             self.ep_sq = 0
-            
+
         elif flag == m.DOUBLE_PUSH:
             self._toggle_piece(moving_piece, start_bit)
             self._toggle_piece(moving_piece, end_bit)
 
             # Set EP square to the square BEHIND the pawn
             self.ep_sq = 1 << (start + 8 if self.color > 0 else start - 8)
-            
+
         elif flag in (m.OO, m.OOO):
             self._toggle_piece(moving_piece, start_bit)
             self._toggle_piece(moving_piece, end_bit)
@@ -145,7 +145,7 @@ class Board :
             captured_pawn = "BP" if self.color > 0 else "WP"
             self._toggle_piece(captured_pawn, 1 << ep_cap)
             self.ep_sq = 0
-        
+
         elif flag >= 6 and flag <= 13: # promotions
             self._toggle_piece(moving_piece, start_bit)
             promo_piece = self._get_promo_piece(flag)
@@ -154,7 +154,7 @@ class Board :
 
         self.castle_rights &= tb.CASTLE_UPDATER[start]
         self.castle_rights &= tb.CASTLE_UPDATER[end]
-        
+
         self.color *= -1
 
     def undo_move(self, move) :
@@ -166,7 +166,7 @@ class Board :
         end = m.get_end(move)
         flag = m.get_flag(move)
         # print('undoing flag', flag)
-        
+
         start_bit = 1 << start
         end_bit = 1 << end
 
@@ -211,11 +211,10 @@ class Board :
         self.castle_rights = old_rights
         self.ep_sq = old_ep
 
-    #? https ://www.chess.com/analysis
+    #? https://www.chess.com/analysis
     def fen_to_board(self, fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') :
         fen_pieces = {
             'P' : "WP", 'N' : "WN", 'B' : "WB", 'R' : "WR", 'Q' : "WQ", 'K' : "WK",
-
             'p' : "BP", 'n' : "BN", 'b' : "BB", 'r' : "BR", 'q' : "BQ", 'k' : "BK",
         }
         self.mailbox = [None] * 64
@@ -245,9 +244,9 @@ class Board :
                         self.mailbox[i] = piece_name
                         i += 1
                 i -= 16
-            
 
-            self.color = 1 if fields[1] == 'w' else -1 
+
+            self.color = 1 if fields[1] == 'w' else -1
 
             self.castle_rights = 0
             if fields[2] != '-':
@@ -262,8 +261,8 @@ class Board :
                 self.ep_sq = 1 << (row * 8 + col)
             else:
                 self.ep_sq = 0
-            
- 
+
+
         except Exception as e :
             raise ValueError(f"Invalid FEN, error : {e}")
 
@@ -278,7 +277,7 @@ class Board :
             row = f"{r} |"
             for c in range(8):
                 sq = r * 8 + c
-                piece_char = "   " 
+                piece_char = "   "
 
                 for name, bb in self.pieces.items() :
                     if bb & (1 << sq) :
@@ -287,24 +286,20 @@ class Board :
                 row += piece_char + "|"
             lines.append(row)
             lines.append(horizontal)
-        
+
         lines.append(files)
         return "\n".join(lines) + '\n'
-    
+
     @staticmethod
     def print_bb(bb: int) :
         for r in range(7, -1, -1) :
             row = ' '.join('1' if bb & (1 << (r*8 + c)) else '0' for c in range(8))
             print(f"{r} | {row}")
-        
-        print("    --------------\n    a b c d e f g h")
 
+        print("    --------------\n    a b c d e f g h")
 
     def copy(self) :
         b = Board()
         b.pieces = self.pieces.copy()
         b.color = self.color
         return b
-
-    
-

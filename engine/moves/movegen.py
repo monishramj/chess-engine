@@ -1,6 +1,6 @@
-from board import Board as b
-import moves.move_tables as tb
-import moves.move as m
+from ..board import Board as b
+from . import move_tables as tb
+from . import move as m
 
 #------------------------#
 #     SETUP & HELPERS    #
@@ -11,8 +11,8 @@ def lssb(bb) -> int : # returns only lssb
     return bb & -bb if bb != 0 else 0
 
 def pop_lssb(bb) -> int : # returns bb w/o lssb
-    return bb & (bb-1) if bb != 0 else 0 
-    
+    return bb & (bb-1) if bb != 0 else 0
+
 def lssb_sq(lssb) -> int : # lssb as least sig set bit, so lowest 1 in bb?
     return lssb.bit_length() - 1
 
@@ -24,11 +24,11 @@ def bb_to_encoded(bb, start, flag) -> list :
         end = lssb_sq(least)
         bb = pop_lssb(bb)
         encoded_moves.append(m.encode_move(start, end, flag))
-    
-    return encoded_moves
-    
 
-def reverse_bb(bb) -> int : 
+    return encoded_moves
+
+
+def reverse_bb(bb) -> int :
     bb = ((bb & 0x5555555555555555) << 1) | ((bb >> 1) & 0x5555555555555555)
     bb = ((bb & 0x3333333333333333) << 2) | ((bb >> 2) & 0x3333333333333333)
     bb = ((bb & 0x0F0F0F0F0F0F0F0F) << 4) | ((bb >> 4) & 0x0F0F0F0F0F0F0F0F)
@@ -62,7 +62,7 @@ def pawn_lookup(bb, color, all_occ, opp_occ, ep_sq=0) -> int :
 
     captures = attacks & opp_occ
     ep = attacks & ep_sq
-    
+
     return step, double, captures, ep
 
 def ray_attacks(sq, occ, dir) -> int :
@@ -111,7 +111,7 @@ def step_pseudo_moves(board: b, piece: str, same_occ, opp_occ, empty) :
         lookup = king_lookup
     else:
         raise ValueError('Wrong piece, only use N or K')
-    
+
     bb = board.same_piece(piece)
 
     moves = []
@@ -170,7 +170,7 @@ def pawn_pseudo_moves(board: b) :
                 m.encode_move(start, end, m.PROMOTE_B),
                 m.encode_move(start, end, m.PROMOTE_N)
             ]
-    
+
     bb = board.same_piece('P')
     color = board.color
     opp_occ = board.opp_occ()
@@ -194,7 +194,7 @@ def pawn_pseudo_moves(board: b) :
         # CAPTURES
         promo_caps = caps & promo_rank
         reg_caps = caps & ~promo_rank
-        
+
         while promo_caps:
             target = lssb_sq(lssb(promo_caps))
             moves.extend(pawn_promo(start, target, True))
@@ -205,7 +205,7 @@ def pawn_pseudo_moves(board: b) :
         # PUSHES
         promo_push = step & promo_rank
         reg_push = step & ~promo_rank
-        
+
         while promo_push:
             target = lssb_sq(lssb(promo_push))
             moves.extend(pawn_promo(start, target, False))
@@ -215,7 +215,7 @@ def pawn_pseudo_moves(board: b) :
         # DOUBLE PUSH
         if double:
             moves.append(m.encode_move(start, lssb_sq(double), m.DOUBLE_PUSH))
-        
+
     return moves
 
 def castling_moves(board: b, all_occ) :
@@ -228,19 +228,19 @@ def castling_moves(board: b, all_occ) :
 
     for i in range(color_offset, color_offset + 2):
         strat = tb.CASTLE[i]
-    
+
         if not (board.castle_rights & strat['bit']):
             continue
-            
+
         if all_occ & strat['empty']:
             continue
-            
+
         is_legal = True
         for sq in strat['safe']:
             if sq_in_attack(sq, board, -board.color):
                 is_legal = False
                 break
-        
+
         if is_legal:
             moves.append(m.encode_move(strat['start'], strat['end'], strat['flag']))
 
@@ -253,31 +253,31 @@ def castling_moves(board: b, all_occ) :
 def sq_in_attack(sq: int, board: b, atk_color: int) -> bool :
     '''
     Docstring for sq_in_attack
-    
+
     :param sq: Tile shifts from 0 (not board rep)
     :type sq: int
     '''
     bb = 1 << sq
     all_occ = board.all_occ()
-    
+
     pref = 'W' if atk_color > 0 else 'B'
     p = board.pieces
-    
+
     if tb.KNIGHT_MOVES[bb] & p[pref + 'N']:
         return True
     if tb.KING_MOVES[bb] & p[pref + 'K']:
         return True
-    
+
     # switched for opponent attacks
     pawn_attacks = tb.PAWN_BLACK_ATTACKS[bb] if atk_color > 0 else tb.PAWN_WHITE_ATTACKS[bb]
     if pawn_attacks & p[pref + 'P']:
         return True
-    
+
     if rook_attacks(bb, all_occ) & (p[pref + 'R'] | p[pref + 'Q']):
         return True
     if bishop_attacks(bb, all_occ) & (p[pref + 'B'] | p[pref + 'Q']):
         return True
-    
+
     return False
 
 def in_check(board: b) -> bool :
@@ -306,7 +306,7 @@ def gen_legal_moves(board: b) -> list[int] :
 
     for move in moves:
         board.make_move(move)
-        
+
         king_sq = lssb_sq(board.opp_piece('K'))
         # b.print_bb(king_sq)
         sq_attacked = sq_in_attack(king_sq, board, board.color)
@@ -314,8 +314,7 @@ def gen_legal_moves(board: b) -> list[int] :
         if not sq_attacked:
             # print(move)
             legal_moves.append(move)
-       
-        board.undo_move(move)
-    
-    return legal_moves
 
+        board.undo_move(move)
+
+    return legal_moves

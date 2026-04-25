@@ -1,5 +1,5 @@
-from board import Board as b
-import moves.movegen as mg
+from engine.board import Board
+from engine.moves import movegen as mg
 
 import time
 
@@ -7,7 +7,7 @@ def perft(board, depth) :
     legal_moves = mg.gen_legal_moves(board)
     if depth == 1:
         return len(legal_moves)
-    
+
     nodes = 0
     for move in legal_moves:
         board.make_move(move)
@@ -17,12 +17,12 @@ def perft(board, depth) :
     return nodes
 
 def perft_test(depth, fen):
-    board = b()
+    board = Board()
     if fen:
         board.fen_to_board(fen)
     else:
         board.fen_to_board()
-    
+
     print(f"\ntesting FEN: {fen if fen else 'starting position'}")
     print(board)
 

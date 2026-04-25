@@ -14,10 +14,10 @@ RAYS = [[0]*8 for _ in range(64)]
 
 CASTLE_UPDATER = [15] * 64
 CASTLE_UPDATER[7] = 14
-CASTLE_UPDATER[63] = 11 
+CASTLE_UPDATER[63] = 11
 CASTLE_UPDATER[0] = 13
-CASTLE_UPDATER[56] = 7 
-CASTLE_UPDATER[4]  = 12 
+CASTLE_UPDATER[56] = 7
+CASTLE_UPDATER[4]  = 12
 CASTLE_UPDATER[60] = 3
 
 CASTLE = [
@@ -30,21 +30,21 @@ CASTLE = [
     },
     # w_ooo
     {
-        'bit': 2, 
+        'bit': 2,
         'empty': 0xE,
         'safe': [4, 3, 2],
         'start': 4, 'end': 2, 'flag': 3
     },
     # b_oo
     {
-        'bit': 4, 
+        'bit': 4,
         'empty': 0x6000000000000000,
         'safe': [60, 61, 62],
         'start': 60, 'end': 62, 'flag': 2
     },
     # b_ooo
     {
-        'bit': 8, 
+        'bit': 8,
         'empty': 0xE00000000000000,
         'safe': [60, 59, 58],
         'start': 60, 'end': 58, 'flag': 3
@@ -54,7 +54,7 @@ CASTLE = [
 def east_one(bb) :
     return bitmask(bb << 1) & ~COLUMNS[0]
 def west_one(bb) :
-    return bitmask(bb >> 1) & ~COLUMNS[7]   
+    return bitmask(bb >> 1) & ~COLUMNS[7]
 def north_one(bb) :
     return bitmask(bb << 8)
 def south_one(bb) :
@@ -79,9 +79,9 @@ KNIGHT_SETUP = {
 #     mask = bb
 #     nw = bb
 #     se = bb
-    
+#
 #     while nw := north_one(west_one(nw)): # wow walrus operator!!
-#         mask |= nw 
+#         mask |= nw
 #     while se := south_one(east_one(se)):
 #         mask |= se
 
@@ -92,7 +92,7 @@ KNIGHT_SETUP = {
 #     ne = bb
 #     sw = bb
 
-#     while ne := south_one(west_one(ne)): 
+#     while ne := south_one(west_one(ne)):
 #         mask |= ne
 #     while sw := north_one(east_one(sw)):
 #         mask |= sw
@@ -117,18 +117,18 @@ def _compute_rays():
         for i,j in zip(range(r-1,-1,-1), range(c+1,8)): RAYS[sq][SE] |= 1 << (i*8+j)
         for i,j in zip(range(r-1,-1,-1), range(c-1,-1,-1)): RAYS[sq][SW] |= 1 << (i*8+j)
 
-def _compute_knight_move(bb) : 
+def _compute_knight_move(bb) :
     # https://www.chessprogramming.org/Knight_Pattern
     # https://stackoverflow.com/questions/72296626/chess-bitboard-move-generation#:~:text=When%20you%20generate%20moves%20you,later%20stages%20of%20your%20AI.
     moves = 0
-    for offset, mask in KNIGHT_SETUP.items() : 
+    for offset, mask in KNIGHT_SETUP.items() :
         if mask & bb :
             moves |= bitmask(bb << offset if offset > 0 else bb >> -offset)
 
     return moves
 
-def _compute_king_move(bb) : 
-    # https://www.chessprogramming.org/King_Pattern 
+def _compute_king_move(bb) :
+    # https://www.chessprogramming.org/King_Pattern
     horiz = east_one(bb) | west_one(bb)
     dr = horiz | bb
 
@@ -145,7 +145,7 @@ def _compute_pawn_move(bb, color) :
     attacks = east_one(step) | west_one(step)
 
     return moves, attacks
-        
+
 def compute_tables(compute_move) :
     table = {}
     for i in range(64):

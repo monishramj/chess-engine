@@ -27,7 +27,7 @@ PROMOTE_Q_CAP = 13
 def encode_move(start: int, end: int, flag: int):
     '''
     Docstring for encode_move
-    
+
     :param start: Tile shifts from 0
     :type start: int
     :param end: Tile shifts from 0
@@ -39,11 +39,11 @@ def encode_move(start: int, end: int, flag: int):
 
     return moves
 
-def get_start(move): 
+def get_start(move):
     return move & 0x3F
 
-def get_end(move):  
+def get_end(move):
     return (move >> 6) & 0x3F
- 
-def get_flag(move):  
+
+def get_flag(move):
     return (move >> 12) & 0xF
