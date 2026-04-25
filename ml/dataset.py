@@ -6,8 +6,9 @@ import torch
 class ChessDataset(torch.utils.data.Dataset):
 
     # https://www.kaggle.com/datasets/ronakbadhe/chess-evaluations
-    def __init__(self, file) :
-        self.data = pd.read_csv(file, nrows=100000)
+    def __init__(self, num_rows, file) :
+        self.data = pd.read_csv(file, nrows=num_rows)
+        print('---------dataset loaded:\n', self.data.head())
 
     def __len__(self) :
         return len(self.data)
@@ -17,15 +18,16 @@ class ChessDataset(torch.utils.data.Dataset):
         raw_score = str(self.data.iloc[idx, 1])
         b = Board(str(fen))
 
-        label = 0
+        val = 0
         if '#' in raw_score :
-            label = 1.0 if '-' not in raw_score else -1.0
+            val = 1.0 if '-' not in raw_score else -1.0
         else :
-            label = torch.tanh(torch.tensor(float(raw_score) / 400.0))
+            val = np.tanh(float(raw_score) / 400.0)
 
+        label = torch.tensor(val, dtype=torch.float32)
         base_tensor = b.board_to_tensor()
-        turn = np.full((1, 8, 8), b.color, dtype=np.float32)
-        final_tensor = np.concatenate([base_tensor, turn], axis=0)
+        turn = torch.full((1, 8, 8), float(b.color), dtype=torch.float32)
+        final_tensor = torch.cat((base_tensor, turn), dim=0)
 
 
         return final_tensor, label

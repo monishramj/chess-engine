@@ -1,4 +1,9 @@
-from ..board import Board as b
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..board import Board as b
+
 from . import move_tables as tb
 from . import move as m
 

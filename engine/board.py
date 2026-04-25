@@ -1,6 +1,6 @@
 from .moves import move as m
 from .moves import move_tables as tb
-import moves.movegen as mg
+from .moves import movegen as mg
 
 import numpy as np
 import torch
@@ -46,19 +46,19 @@ class Board :
                 self.pieces["BR"] | self.pieces["BQ"] | self.pieces["BK"])
 
     def all_occ(self) :
-        return Board.white_occ(self) | Board.black_occ(self)
+        return self.white_occ() | self.black_occ()
 
     def same_occ(self) :
         if self.color > 0:
-            return Board.white_occ(self)
+            return self.white_occ()
         else:
-            return Board.black_occ(self)
+            return self.black_occ()
 
     def opp_occ(self) :
         if self.color > 0:
-            return Board.black_occ(self)
+            return self.black_occ()
         else:
-            return Board.white_occ(self)
+            return self.white_occ()
 
     def opp_piece(self, piece: str) :
         pieces = ['P', 'N', 'B', 'R', 'Q', 'K']
@@ -80,11 +80,9 @@ class Board :
         else:
             return self.pieces['B' + piece]
 
-    def _toggle_piece(self, name, sq_bit) :
+    def _toggle_piece(self, name, sq_idx) :
+        sq_bit = 1 << sq_idx
         self.pieces[name] ^= sq_bit
-
-        sq_idx = sq_bit.bit_length() - 1 # do i rlly want to import movegen for one function :sob:
-
         if self.pieces[name] & sq_bit:
             self.mailbox[sq_idx] = name
         else:
@@ -102,32 +100,29 @@ class Board :
         end = m.get_end(move)
         flag = m.get_flag(move)
 
-        start_bit = 1 << start
-        end_bit = 1 << end
-
         moving_piece = self.mailbox[start]
         captured_piece = self.mailbox[end]
 
         self.history.append((self.castle_rights, self.ep_sq, captured_piece, moving_piece))
 
         if captured_piece and flag != m.EP:
-            self._toggle_piece(captured_piece, end_bit)
+            self._toggle_piece(captured_piece, end)
 
         if flag == m.QUIET or flag == m.CAPTURE:
-            self._toggle_piece(moving_piece, start_bit)
-            self._toggle_piece(moving_piece, end_bit)
+            self._toggle_piece(moving_piece, start)
+            self._toggle_piece(moving_piece, end)
             self.ep_sq = 0
 
         elif flag == m.DOUBLE_PUSH:
-            self._toggle_piece(moving_piece, start_bit)
-            self._toggle_piece(moving_piece, end_bit)
+            self._toggle_piece(moving_piece, start)
+            self._toggle_piece(moving_piece, end)
 
             # Set EP square to the square BEHIND the pawn
             self.ep_sq = 1 << (start + 8 if self.color > 0 else start - 8)
 
         elif flag in (m.OO, m.OOO):
-            self._toggle_piece(moving_piece, start_bit)
-            self._toggle_piece(moving_piece, end_bit)
+            self._toggle_piece(moving_piece, start)
+            self._toggle_piece(moving_piece, end)
 
             if flag == m.OO:
                 r_start, r_end = (7, 5) if self.color > 0 else (63, 61)
@@ -135,23 +130,23 @@ class Board :
                 r_start, r_end = (0, 3) if self.color > 0 else (56, 59)
 
             r_name = "WR" if self.color > 0 else "BR"
-            self._toggle_piece(r_name, 1 << r_start)
-            self._toggle_piece(r_name, 1 << r_end)
+            self._toggle_piece(r_name, r_start)
+            self._toggle_piece(r_name, r_end)
             self.ep_sq = 0
 
         elif flag == m.EP:
-            self._toggle_piece(moving_piece, start_bit)
-            self._toggle_piece(moving_piece, end_bit)
+            self._toggle_piece(moving_piece, start)
+            self._toggle_piece(moving_piece, end)
 
             ep_cap = end - 8 if self.color > 0 else end + 8
             captured_pawn = "BP" if self.color > 0 else "WP"
-            self._toggle_piece(captured_pawn, 1 << ep_cap)
+            self._toggle_piece(captured_pawn, ep_cap)
             self.ep_sq = 0
 
         elif flag >= 6 and flag <= 13: # promotions
-            self._toggle_piece(moving_piece, start_bit)
+            self._toggle_piece(moving_piece, start)
             promo_piece = self._get_promo_piece(flag)
-            self._toggle_piece(promo_piece, end_bit)
+            self._toggle_piece(promo_piece, end)
             self.ep_sq = 0
 
         self.castle_rights &= tb.CASTLE_UPDATER[start]
@@ -167,12 +162,10 @@ class Board :
         end = m.get_end(move)
         flag = m.get_flag(move)
 
-        start_bit = 1 << start
-        end_bit = 1 << end
 
         if flag in (m.OO, m.OOO):
-            self._toggle_piece(moving_piece, start_bit)
-            self._toggle_piece(moving_piece, end_bit)
+            self._toggle_piece(moving_piece, start)
+            self._toggle_piece(moving_piece, end)
 
             if flag == m.OO:
                 r_start, r_end = (7, 5) if self.color > 0 else (63, 61)
@@ -180,46 +173,45 @@ class Board :
                 r_start, r_end = (0, 3) if self.color > 0 else (56, 59)
 
             r_name = "WR" if self.color > 0 else "BR"
-            self._toggle_piece(r_name, 1 << r_start)
-            self._toggle_piece(r_name, 1 << r_end)
+            self._toggle_piece(r_name, r_start)
+            self._toggle_piece(r_name, r_end)
 
         elif flag == m.EP:
-            self._toggle_piece(moving_piece, start_bit)
-            self._toggle_piece(moving_piece, end_bit)
+            self._toggle_piece(moving_piece, start)
+            self._toggle_piece(moving_piece, end)
 
             ep_cap_sq = end - 8 if self.color > 0 else end + 8
             victim_pawn = "BP" if self.color > 0 else "WP"
-            self._toggle_piece(victim_pawn, 1 << ep_cap_sq)
+            self._toggle_piece(victim_pawn, ep_cap_sq)
 
         elif flag >= 6 and flag <= 13: # promotions
             promo_piece = self._get_promo_piece(flag)
-            self._toggle_piece(promo_piece, end_bit)
+            self._toggle_piece(promo_piece, end)
 
             pawn_name = "WP" if self.color > 0 else "BP"
-            self._toggle_piece(pawn_name, start_bit)
+            self._toggle_piece(pawn_name, start)
 
             if captured_piece:
-                self._toggle_piece(captured_piece, end_bit)
+                self._toggle_piece(captured_piece, end)
 
         else: # QUIET, CAPTURE, DOUBLE_PUSH
-            self._toggle_piece(moving_piece, start_bit)
-            self._toggle_piece(moving_piece, end_bit)
+            self._toggle_piece(moving_piece, start)
+            self._toggle_piece(moving_piece, end)
             if captured_piece:
-                self._toggle_piece(captured_piece, end_bit)
+                self._toggle_piece(captured_piece, end)
 
         self.castle_rights = old_rights
         self.ep_sq = old_ep
         
     
     def board_to_tensor(self) :
-        tensor = np.zeros((12, 8, 8), dtype=np.float32)
+        tensor = torch.zeros((12, 8, 8), dtype=torch.float32)
 
         # ensure order in case i change self.pieces later
         piece_order = ["WP", "WN", "WB", "WR", "WQ", "WK", 
                        "BP", "BN", "BB", "BR", "BQ", "BK"]
-        idx = 0
 
-        for piece in piece_order:
+        for idx, piece in enumerate(piece_order):
             bb = self.pieces[piece]
 
             while bb:
@@ -230,10 +222,10 @@ class Board :
                 row = i // 8
                 col = i % 8
             
-            tensor[idx][row][col] = 1.0
-            idx += 1
+                tensor[idx][row][col] = 1.0
         
-        return torch.from_numpy(tensor)
+        
+        return tensor
 
     #? https://www.chess.com/analysis
     def fen_to_board(self, fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') :
@@ -322,8 +314,12 @@ class Board :
 
         print("    --------------\n    a b c d e f g h")
 
-    def copy(self) :
+    def copy(self):
         b = Board()
         b.pieces = self.pieces.copy()
+        b.mailbox = self.mailbox.copy()
         b.color = self.color
+        b.ep_sq = self.ep_sq
+        b.castle_rights = self.castle_rights
+        b.history = self.history.copy()
         return b
