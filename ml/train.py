@@ -12,11 +12,11 @@ def train():
     # batch_size=1024 is usually best for mps memory bandwidth
     batch_size = 1024
     learning_rate = 0.001
-    epochs = 10
-    num_rows = 1000000
-    model_name = 'model_1mil.pth'
+    epochs = 4
+    num_rows = 5000000
+    model_name = 'model_5mil.pth'
 
-    dataset = ChessDataset("data/chessData.csv", num_rows)
+    dataset = ChessDataset(num_rows, "data/chessData.csv")
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=False)
     print(f'---------total positions in training set: {len(dataset):,}')
 
@@ -24,7 +24,7 @@ def train():
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    print(f'---------starting training for 10 epochs...')
+    print(f'---------starting training for {epochs} epochs...')
     print("-" * 40)
 
     model.train()

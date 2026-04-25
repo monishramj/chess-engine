@@ -11,7 +11,7 @@ def validate():
     print(f"validating on: {device}")
 
     model = ChessNet().to(device)
-    model.load_state_dict(torch.load("ml/models/model_100k.pth", map_location=device))
+    model.load_state_dict(torch.load("ml/models/model_5mil.pth", map_location=device))
     model.eval()
 
     print("loading unseen validation data...")
@@ -50,9 +50,9 @@ def validate():
     plt.plot([-1, 1], [-1, 1], color='red', linestyle='--')
     plt.xlabel("actual stockfish eval (normalized)")
     plt.ylabel("model prediction (normalized)")
-    plt.title("model accuracy: actual vs predicted (100k)")
+    plt.title("model accuracy: actual vs predicted (5 mil)")
     plt.grid(True)
-    plt.savefig("tests/results/neural_acc_100k.png")
+    plt.savefig("tests/results/neural_acc_5mil.png")
     plt.show()
     
     mae = np.mean(np.abs(np.array(actuals) - np.array(predictions)))
