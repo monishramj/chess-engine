@@ -1,8 +1,13 @@
 from .moves import move as m
 from .moves import move_tables as tb
+import moves.movegen as mg
+
+import numpy as np
+import torch
+from typing import Any, Optional
 
 class Board :
-    def __init__(self) :
+    def __init__(self, fen: Optional[str] = None) :
         self.pieces = {
             "WP" : 0,
             "WN" : 0,
@@ -17,7 +22,9 @@ class Board :
             "BQ" : 0,
             "BK" : 0
         }
-        self.mailbox = [None] * 64 # keep track of pieces, so we don't have to do piece_at loop which saves so much
+
+        # keep track of pieces, so we don't have to do piece_at loop which saves so much
+        self.mailbox: list[Optional[str]] = [None] * 64 
 
         self.color = 1
         self.ep_sq = 0
@@ -25,6 +32,10 @@ class Board :
         self.castle_rights = 15 #1111, w_oo, w_ooo, b_oo, b_ooo
 
         self.history = [] # holds (castling, eq, captures if any, moving piece)
+
+        if fen is not None:
+            self.fen_to_board(fen)
+        
 
     def white_occ(self) :
         return (self.pieces["WP"] | self.pieces["WN"] | self.pieces["WB"] |
@@ -49,7 +60,7 @@ class Board :
         else:
             return Board.white_occ(self)
 
-    def opp_piece(self, piece: chr) :
+    def opp_piece(self, piece: str) :
         pieces = ['P', 'N', 'B', 'R', 'Q', 'K']
         if piece not in pieces:
             raise ValueError('Invalid piece')
@@ -59,7 +70,7 @@ class Board :
         else:
             return self.pieces['W' + piece]
 
-    def same_piece(self, piece: chr) :
+    def same_piece(self, piece: str) :
         pieces = ['P', 'N', 'B', 'R', 'Q', 'K']
         if piece not in pieces:
             raise ValueError('Invalid piece')
@@ -68,13 +79,6 @@ class Board :
             return self.pieces['W' + piece]
         else:
             return self.pieces['B' + piece]
-
-    # def piece_at(self, tile: int) :
-    #     mask = 1 << tile
-    #     for name, bb in self.pieces.items():
-    #         if bb & mask:
-    #             return name
-    #     return None
 
     def _toggle_piece(self, name, sq_bit) :
         self.pieces[name] ^= sq_bit
@@ -103,8 +107,6 @@ class Board :
 
         moving_piece = self.mailbox[start]
         captured_piece = self.mailbox[end]
-
-        # print(start, ',', end, ',', flag, ',', moving_piece, ',', captured_piece)
 
         self.history.append((self.castle_rights, self.ep_sq, captured_piece, moving_piece))
 
@@ -158,20 +160,17 @@ class Board :
         self.color *= -1
 
     def undo_move(self, move) :
-        # print('undoing move')
         old_rights, old_ep, captured_piece, moving_piece = self.history.pop()
         self.color *= -1
 
         start = m.get_start(move)
         end = m.get_end(move)
         flag = m.get_flag(move)
-        # print('undoing flag', flag)
 
         start_bit = 1 << start
         end_bit = 1 << end
 
         if flag in (m.OO, m.OOO):
-            # print(moving_piece)
             self._toggle_piece(moving_piece, start_bit)
             self._toggle_piece(moving_piece, end_bit)
 
@@ -210,6 +209,31 @@ class Board :
 
         self.castle_rights = old_rights
         self.ep_sq = old_ep
+        
+    
+    def board_to_tensor(self) :
+        tensor = np.zeros((12, 8, 8), dtype=np.float32)
+
+        # ensure order in case i change self.pieces later
+        piece_order = ["WP", "WN", "WB", "WR", "WQ", "WK", 
+                       "BP", "BN", "BB", "BR", "BQ", "BK"]
+        idx = 0
+
+        for piece in piece_order:
+            bb = self.pieces[piece]
+
+            while bb:
+                least = mg.lssb(bb)
+                i = mg.lssb_sq(least)
+                bb = mg.pop_lssb(bb)
+            
+                row = i // 8
+                col = i % 8
+            
+            tensor[idx][row][col] = 1.0
+            idx += 1
+        
+        return torch.from_numpy(tensor)
 
     #? https://www.chess.com/analysis
     def fen_to_board(self, fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') :

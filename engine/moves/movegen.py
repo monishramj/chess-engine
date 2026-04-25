@@ -51,7 +51,7 @@ def knight_lookup(bb, same_occ) -> int :
 def king_lookup(bb, same_occ) -> int :
     return tb.KING_MOVES[bb] & not_bb(same_occ)
 
-def pawn_lookup(bb, color, all_occ, opp_occ, ep_sq=0) -> int :
+def pawn_lookup(bb, color, all_occ, opp_occ, ep_sq=0) :
     start_rank = tb.ROWS[1] if color > 0 else tb.ROWS[6]
     move = tb.north_one if color > 0 else tb.south_one
 
