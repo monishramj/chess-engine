@@ -7,6 +7,11 @@ from torch.utils.data import DataLoader
 from ml.model import ChessNet
 from ml.dataset import ChessDataset, ShardDataset
 
+def weighted_mse_loss(inputs, targets):
+    weights = 1.0 + torch.abs(targets) * 2.0 
+    loss = (inputs - targets) ** 2
+    return torch.mean(weights * loss)
+
 def train():
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(f'---------training on: {device}')
@@ -16,13 +21,14 @@ def train():
     learning_rate = 0.001
     epochs = 5
     num_rows = 10000000
-    model_name = 'model_10mil.pth'
+
+    # alpha: added weighted mse loss 
+    model_name = 'alpha_10mil.pth'
 
     shard_dir = "data/shards/"
     shard_files = [os.path.join(shard_dir, f) for f in os.listdir(shard_dir) if f.endswith('.pt')]
 
     model = ChessNet().to(device)
-    criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     print(f'---------starting training for {epochs} epochs...')
@@ -47,7 +53,7 @@ def train():
 
                 optimizer.zero_grad()
                 outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                loss = weighted_mse_loss(outputs, labels)
                 loss.backward()
                 optimizer.step()
 

@@ -13,8 +13,10 @@ def validate():
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(f"validating on: {device}")
 
+    model_name = 'alpha_10mil.pth' 
+    
     model = ChessNet().to(device)
-    model.load_state_dict(torch.load("ml/models/model_10mil.pth", map_location=device))
+    model.load_state_dict(torch.load(f"ml/models/{model_name}", map_location=device))
     model.eval()
 
     print("loading unseen validation data...")
@@ -55,7 +57,7 @@ def validate():
     plt.ylabel("model prediction (normalized)")
     plt.title("model accuracy: actual vs predicted (10 mil, 5 epochs)")
     plt.grid(True)
-    plt.savefig("tests/results/neural_acc_10mil.png")
+    plt.savefig(f"tests/results/{model_name}_acc.png")
     plt.show()
     
     mae = np.mean(np.abs(np.array(actuals) - np.array(predictions)))
@@ -72,9 +74,7 @@ def validate():
     print(f"r2 score: {r2:.4f}")
     print(f"correlation: {corr:.4f}")
 
-    # prof note: 'binned bias' - checks if we over/underestimate 
-    # when the game is heavily skewed for one side
-    bins = np.linspace(-1, 1, 5) # check 4 zones: black win, black edge, white edge, white win
+    bins = np.linspace(-1, 1, 5)
     for i in range(len(bins)-1):
         mask = (actuals_np >= bins[i]) & (actuals_np < bins[i+1])
         if np.any(mask):

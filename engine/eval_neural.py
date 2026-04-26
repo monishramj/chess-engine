@@ -3,7 +3,7 @@ from ml.model import ChessNet
 
 class NeuralEval:
 
-    def __init__(self, model_path = 'ml/models/new_model.pth') :
+    def __init__(self, model_path = 'ml/models/alpha_10mil.pth') :
         
         self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
         self.model = ChessNet().to(self.device) 
