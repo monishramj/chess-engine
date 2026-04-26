@@ -17,7 +17,12 @@ def train():
     model_name = 'model_5mil.pth'
 
     dataset = ChessDataset(num_rows, "data/chessData.csv")
-    train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=False)
+    train_loader = DataLoader(dataset, 
+                              batch_size=batch_size, 
+                              shuffle=True, 
+                              num_workers= 8, 
+                              pin_memory=False)
+
     print(f'---------total positions in training set: {len(dataset):,}')
 
     model = ChessNet().to(device)
