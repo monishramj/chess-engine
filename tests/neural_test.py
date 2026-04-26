@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from sklearn.metrics import r2_score
+from scipy.stats import pearsonr
+
 from ml.model import ChessNet
 from engine.board import Board
 
@@ -11,7 +14,7 @@ def validate():
     print(f"validating on: {device}")
 
     model = ChessNet().to(device)
-    model.load_state_dict(torch.load("ml/models/model_5mil.pth", map_location=device))
+    model.load_state_dict(torch.load("ml/models/model_10mil.pth", map_location=device))
     model.eval()
 
     print("loading unseen validation data...")
@@ -50,13 +53,34 @@ def validate():
     plt.plot([-1, 1], [-1, 1], color='red', linestyle='--')
     plt.xlabel("actual stockfish eval (normalized)")
     plt.ylabel("model prediction (normalized)")
-    plt.title("model accuracy: actual vs predicted (5 mil)")
+    plt.title("model accuracy: actual vs predicted (10 mil, 5 epochs)")
     plt.grid(True)
-    plt.savefig("tests/results/neural_acc_5mil.png")
+    plt.savefig("tests/results/neural_acc_10mil.png")
     plt.show()
     
     mae = np.mean(np.abs(np.array(actuals) - np.array(predictions)))
     print(f"validation complete. mean absolute error: {mae:.4f}")
+    actuals_np = np.array(actuals)
+    preds_np = np.array(predictions)
+
+    mae = np.mean(np.abs(actuals_np - preds_np))
+    r2 = r2_score(actuals_np, preds_np)
+    corr, _ = pearsonr(actuals_np, preds_np)
+
+    print(f"--- validation complete ---")
+    print(f"mae: {mae:.4f}")
+    print(f"r2 score: {r2:.4f}")
+    print(f"correlation: {corr:.4f}")
+
+    # prof note: 'binned bias' - checks if we over/underestimate 
+    # when the game is heavily skewed for one side
+    bins = np.linspace(-1, 1, 5) # check 4 zones: black win, black edge, white edge, white win
+    for i in range(len(bins)-1):
+        mask = (actuals_np >= bins[i]) & (actuals_np < bins[i+1])
+        if np.any(mask):
+            bin_mae = np.mean(np.abs(actuals_np[mask] - preds_np[mask]))
+            bin_bias = np.mean(preds_np[mask] - actuals_np[mask])
+            print(f"  zone [{bins[i]:.1f} to {bins[i+1]:.1f}]: mae={bin_mae:.4f}, bias={bin_bias:.4f}")
 
 if __name__ == "__main__":
     validate()
