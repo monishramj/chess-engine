@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-class ShardDataset(Dataset):
+class ShardDataset(Dataset) :
     def __init__(self, shard_path):
         data = torch.load(shard_path, weights_only=True)
         self.inputs = data['inputs']
@@ -17,7 +17,7 @@ class ShardDataset(Dataset):
         # no more board parsing! js return the pre-calculated tensors
         return self.inputs[idx], self.labels[idx]
 
-class ChessDataset(Dataset):
+class ChessDataset(Dataset) :
     # https://www.kaggle.com/datasets/ronakbadhe/chess-evaluations
     def __init__(self, num_rows, file) :
         self.data = pd.read_csv(file, nrows=num_rows)

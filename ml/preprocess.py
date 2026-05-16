@@ -7,7 +7,7 @@ from multiprocessing import Pool, cpu_count
 
 from engine.board import Board
 
-def process_row(row_data):
+def process_row(row_data) :
     fen, raw_score = row_data
     raw_score = str(raw_score).strip()
     b = Board(str(fen))
@@ -28,7 +28,7 @@ def process_row(row_data):
 
     return final_tensor, label
 
-def preprocess(csv_path, output_dir, rows_per_shard=1000000, total_rows=None):
+def preprocess(csv_path, output_dir, rows_per_shard=1000000, total_rows=None) :
     
     print(f"--- starting parallel pre-processing: {csv_path}")
     os.makedirs(output_dir, exist_ok=True)

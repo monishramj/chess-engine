@@ -13,14 +13,14 @@ def validate():
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(f"validating on: {device}")
 
-    model_name = 'alpha_10mil.pth' 
+    model_name = 'alphav2_10mil.pth' 
     
     model = ChessNet().to(device)
     model.load_state_dict(torch.load(f"ml/models/{model_name}", map_location=device))
     model.eval()
 
     print("loading unseen validation data...")
-    df = pd.read_csv("data/chessData.csv", skiprows=10000000, nrows=1000, names=["FEN", "Eval"])
+    df = pd.read_csv("data/chessData.csv", skiprows=10000000, nrows=10000, names=["FEN", "Eval"])
 
     actuals = []
     predictions = []
@@ -55,7 +55,7 @@ def validate():
     plt.plot([-1, 1], [-1, 1], color='red', linestyle='--')
     plt.xlabel("actual stockfish eval (normalized)")
     plt.ylabel("model prediction (normalized)")
-    plt.title("model accuracy: actual vs predicted (10 mil, 5 epochs)")
+    plt.title(f"{model_name} acc: actual vs predicted (10 mil, 5 epochs, 100k samples)")
     plt.grid(True)
     plt.savefig(f"tests/results/{model_name}_acc.png")
     plt.show()
