@@ -281,6 +281,43 @@ class Board :
 
         except Exception as e :
             raise ValueError(f"Invalid FEN, error : {e}")
+    
+    def board_to_fen(self) :
+        piece_to_fen = {
+            "WP": 'P', "WN": 'N', "WB": 'B', "WR": 'R', "WQ": 'Q', "WK": 'K',
+            "BP": 'p', "BN": 'n', "BB": 'b', "BR": 'r', "BQ": 'q', "BK": 'k'
+        }
+
+        rows = []
+        for r in range(7, -1, -1):
+            empty = 0
+            row = ''
+            for c in range(8):
+                piece = self.mailbox[r * 8 + c]
+                if piece:
+                    if empty: row += str(empty); empty = 0
+                    row += piece_to_fen[piece]
+                else:
+                    empty += 1
+            if empty: row += str(empty)
+            rows.append(row)
+
+        color = 'w' if self.color > 0 else 'b'
+
+        castle = ''
+        if self.castle_rights & 1: castle += 'K'
+        if self.castle_rights & 2: castle += 'Q'
+        if self.castle_rights & 4: castle += 'k'
+        if self.castle_rights & 8: castle += 'q'
+        if not castle: castle = '-'
+
+        if self.ep_sq:
+            ep_idx = mg.lssb_sq(self.ep_sq)
+            ep = "abcdefgh"[ep_idx % 8] + str(ep_idx // 8 + 1)
+        else:
+            ep = '-'
+
+        return f"{'/'.join(rows)} {color} {castle} {ep} 0 1"
 
     def __str__(self) :
         lines = []

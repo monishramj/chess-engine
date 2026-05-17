@@ -6,8 +6,8 @@ import numpy as np
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
-def eval(board: Board, device, model) -> float:
-  tensor = board.board_to_tensor()
+def eval_position(board: Board, device, model) -> float:
+  tensor = board.board_to_tensor().to(device)
 
   if tensor.dim() == 3:
         tensor = tensor.unsqueeze(0)
@@ -23,11 +23,11 @@ def search(board: Board, depth: int, device, model) :
 
 def minimax(board: Board, depth: int, color: int, device, model, a, b) :
     if depth == 0:
-      return eval(board, device, model), None
+      return eval_position(board, device, model), None
     
     legal_moves = mg.gen_legal_moves(board) # iterating thru twice, can fix that later
     if not legal_moves:
-        if board.in_check():
+        if mg.in_check(board) :
             return (-np.inf if color == 1 else np.inf), None
         return 0.5, None
 

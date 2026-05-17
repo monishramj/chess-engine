@@ -9,14 +9,14 @@ from scipy.stats import pearsonr
 from ml.model import ChessNet
 from engine.board import Board
 
+MODEL_NAME = 'alphav2_10mil.pth' 
+
 def validate():
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(f"validating on: {device}")
-
-    model_name = 'alphav2_10mil.pth' 
     
     model = ChessNet().to(device)
-    model.load_state_dict(torch.load(f"ml/models/{model_name}", map_location=device))
+    model.load_state_dict(torch.load(f"ml/models/{MODEL_NAME}", map_location=device))
     model.eval()
 
     print("loading unseen validation data...")
@@ -55,9 +55,9 @@ def validate():
     plt.plot([-1, 1], [-1, 1], color='red', linestyle='--')
     plt.xlabel("actual stockfish eval (normalized)")
     plt.ylabel("model prediction (normalized)")
-    plt.title(f"{model_name} acc: actual vs predicted (10 mil, 5 epochs, 100k samples)")
+    plt.title(f"{MODEL_NAME} acc: actual vs predicted (10 mil, 5 epochs, 100k samples)")
     plt.grid(True)
-    plt.savefig(f"tests/results/{model_name}_acc.png")
+    plt.savefig(f"tests/results/{MODEL_NAME}_acc.png")
     plt.show()
     
     mae = np.mean(np.abs(np.array(actuals) - np.array(predictions)))
