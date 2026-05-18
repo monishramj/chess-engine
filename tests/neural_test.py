@@ -55,9 +55,9 @@ def validate():
     plt.plot([-1, 1], [-1, 1], color='red', linestyle='--')
     plt.xlabel("actual stockfish eval (normalized)")
     plt.ylabel("model prediction (normalized)")
-    plt.title(f"{MODEL_NAME} acc: actual vs predicted (10 mil, 5 epochs, 100k samples)")
+    plt.title(f"{MODEL_NAME} acc: actual vs predicted (10 mil, 5 epochs, 10k samples)")
     plt.grid(True)
-    plt.savefig(f"tests/results/{MODEL_NAME}_acc.png")
+    # plt.savefig(f"tests/results/{MODEL_NAME}_acc.png")
     plt.show()
     
     mae = np.mean(np.abs(np.array(actuals) - np.array(predictions)))
