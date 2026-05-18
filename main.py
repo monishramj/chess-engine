@@ -3,11 +3,14 @@ from engine.moves import movegen as mg
 from engine.moves import move as mv
 import engine.search as srch
 from ml.model import ChessNet
+
+import argparse
 import os
 import torch
 import time
 
-MODEL_NAME = 'alphav2_10mil.pth' 
+
+MODEL_NAME = 'alphav2_10mil' 
 SEARCH_DEPTH = 3
 
 # i can't lie Claude made this SQ_TO_IDX
@@ -17,7 +20,7 @@ def init_engine(device):
   model = ChessNet().to(device)
   
   try:
-      checkpoint = torch.load(f'ml/models/{MODEL_NAME}', map_location=device, weights_only=True)
+      checkpoint = torch.load(f'ml/models/{MODEL_NAME}.pth', map_location=device, weights_only=True)
       model.load_state_dict(checkpoint)
       print(f"--- loaded neural evaluator: {MODEL_NAME}")
   except FileNotFoundError:
@@ -152,9 +155,20 @@ def play_pve(model) :
   
   return
 
+if __name__ == '__main__' :
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('mode', choices=['pve', 'eve'], help='pve: play against engine, eve: watch engine play itself')
+    parser.add_argument('--model', type=str, default=MODEL_NAME, help='name of neural model (default: alphav2_10mil)')
+    parser.add_argument('--depth', type=int, default=SEARCH_DEPTH, help='search depth (default: 3)')
+    args = parser.parse_args()
 
-if __name__ == '__main__':
-  model = init_engine(srch.DEVICE)
-  play_pve(model)
+    MODEL_NAME = args.model
+    SEARCH_DEPTH = args.depth
+    model = init_engine(srch.DEVICE)
+
+    if args.mode == 'pve':
+        play_pve(model)
+    elif args.mode == 'eve':
+        play_eve(model)
 
 
