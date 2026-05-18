@@ -9,14 +9,14 @@ from scipy.stats import pearsonr
 from ml.model import ChessNet
 from engine.board import Board
 
-MODEL_NAME = 'alphav2_10mil.pth' 
+MODEL_NAME = 'alphav2_10mil' 
 
 def validate():
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(f"validating on: {device}")
     
     model = ChessNet().to(device)
-    model.load_state_dict(torch.load(f"ml/models/{MODEL_NAME}", map_location=device))
+    model.load_state_dict(torch.load(f"ml/models/{MODEL_NAME}.pth", map_location=device))
     model.eval()
 
     print("loading unseen validation data...")

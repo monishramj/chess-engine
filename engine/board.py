@@ -327,7 +327,7 @@ class Board :
         lines.append(horizontal)
 
         for r in range(7, -1, -1) :
-            row = f"{r} |"
+            row = f"{r + 1} |"
             for c in range(8):
                 sq = r * 8 + c
                 piece_char = "   "

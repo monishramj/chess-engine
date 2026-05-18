@@ -1,0 +1,15 @@
+[Event "first v1 game"]
+[Site "local"]
+[White "alphav2_10mil"]
+[Black "alphav2_10mil"]
+[Result "*"]
+
+1. Nf3 d5 2. Nc3 Nf6 3. d4 a5 4. Bg5 a4 5. e3 h6 6. Bb5+ c6 7. Bxf6 exf6 
+8. Bxa4 Bb4 9. Qd2 Rxa4 10. b3 Bxc3 11. Qxc3 Ra5 12. a4 Bg4 13. Nd2 Na6 
+14. O-O Qb6 15. f4 Ke7 16. e4 dxe4 17. Nxe4 Be6 18. f5 Bxf5 19. Ng3 Be6 
+20. Rae1 Qb4 21. Nf5+ Rxf5 22. Rxe6+ fxe6 23. Qxb4+ Nxb4 24. Rxf5 Nxc2 
+25. Rc5 Nxd4 26. a5 Nxb3 27. Rc2 Ra8 28. Rb2 Nxa5 29. Ra2 b5 30. Kf2 e5 
+31. h3 Kd6 32. Ra1 Kc5 33. h4 Kc4 34. g3 c5 35. Ra2 b4 36. Ke3 f5 
+37. Kf2 Kd3 38. h5 c4 39. Ra1 c3 40. Ra2 c2 41. Ra1 Nb3 42. Re1 f4 
+43. g4 e4 44. Kg1 Kc3 45. Rf1 e3 46. Kh2 f3 47. Kh3 f2 48. Kg2 Ra2 
+49. Kf3 Nd2+ 50. Ke2 Nxf1 51. Kxf1 c1=Q+ 52. Kg2 f1=Q+ *

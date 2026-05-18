@@ -1,0 +1,9 @@
+--- AlphaV2_10mil test results ---
+
+mae: 0.2259
+r2 score: 0.6430
+correlation: 0.8099
+zone [-1.0 to -0.5]: mae=0.3907, bias=0.3854
+zone [-0.5 to 0.0]: mae=0.1749, bias=0.1278
+zone [0.0 to 0.5]: mae=0.1430, bias=-0.0261
+zone [0.5 to 1.0]: mae=0.3289, bias=-0.3200
