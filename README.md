@@ -3,8 +3,6 @@
 a bitboard-based chess engine with a neural network evaluator, written in
 Python.
 
-**strength: 800-1100 ELO (not tested formally)**
-
 ## try it out!
 
 ```bash
